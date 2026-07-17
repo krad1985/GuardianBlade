@@ -17,7 +17,7 @@ canvas{display:block;width:100%;height:100%;cursor:crosshair}
 //  靈感: 赤之劍 (Red Sword) by Tatsuki
 //  系統: 裝備、強化、道具、建築、周目繼承
 // ════════════════════════════════════════════════════════════
-const $=document.getElementById('gc'),C=$.getContext('2d');
+const $=document.getElementById('gc'),C=$.getContext('2d'),ctx=C;
 let W,H,S,GW=900,GH=640;
 function rs(){W=$.width=innerWidth;H=$.height=innerHeight;S=Math.min(W/GW,H/GH)}
 addEventListener('resize',rs);rs();
