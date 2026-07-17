@@ -175,8 +175,8 @@ let G = {
   time: 0, dt: 0, lastTime: 0,
   mouseX: GW/2, mouseY: GH/2, mouseDown: false, touchId: null,
   shakeX: 0, shakeY: 0, shakeMag: 0,
-  particles: [], effects: [], drops: [], enemies: [], projectiles: [],
-  showOverlay: false, buildingChoice: null,
+  particles: [], effects: [], drops: [], enemies: [], projectiles: [], dmgNumbers: [],
+  showOverlay: false, buildingChoice: null,readyNext: false,
   waveCompleteItems: [], restChoices: [],
   canSwing: true, swingCooldownTimer: 0,
   totalTime: 0,
@@ -303,15 +303,14 @@ function spawnDrops(x,y,count){
   for(let i=0;i<count;i++){
     const r=Math.random();
     let item;
-    if(r<0.45) item={type:'gold',val:randInt(1,5+Math.floor(G.wave/3))};
-    else if(r<0.6) item={type:'gold',val:randInt(3,10+Math.floor(G.wave/2))};
-    else if(r<0.66) item={type:'soul',val:1};
-    else if(r<0.72 && G.player.weaponIdx<WEAPONS.length-1) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id};
-    else if(r<0.78) item={type:'equip',data:randomEquip()};
-    else if(r<0.84) {const s=rndItem(SKILLS);item={type:'skill',id:s.id};}
-    else if(r<0.9) {const a=rndItem(ARTIFACTS);item={type:'artifact',id:a.id};}
-    else item={type:'gold',val:randInt(2,8)};
-    G.drops.push(createDrop(x+rand(-15,15),y+rand(-15,15),item));
+    if(r<0.40) item={type:'gold',val:randInt(1,3+Math.floor(G.wave/3))};
+    else if(r<0.70) item={type:'gold',val:randInt(2,5+Math.floor(G.wave/4))};
+    else if(r<0.80) item={type:'soul',val:1};
+    else if(r<0.85 && G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.3) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id};
+    else if(r<0.90) item={type:'equip',data:randomEquip()};
+    else if(r<0.95) {const s=rndItem(SKILLS);item={type:'skill',id:s.id};}
+    else {const a=rndItem(ARTIFACTS);item={type:'artifact',id:a.id};}
+    if(item) G.drops.push(createDrop(x+rand(-15,15),y+rand(-15,15),item));
   }
 }
 
@@ -320,7 +319,7 @@ function forceDrop(x,y,type){
   switch(type){
     case 'soul': item={type:'soul',val:1}; break;
     case 'artifact': {const a=rndItem(ARTIFACTS);item={type:'artifact',id:a.id};} break;
-    case 'weapon': if(G.player.weaponIdx<WEAPONS.length-1) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id}; else item={type:'gold',val:10}; break;
+    case 'weapon': if(G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.5) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id}; else item={type:'gold',val:10}; break;
     default: item={type:'gold',val:5};
   }
   if(item) G.drops.push(createDrop(x+rand(-10,10),y+rand(-10,10),item));
@@ -331,7 +330,7 @@ function forceDrop(x,y,type){
 function startWave(){
   G.wave++;
   G.waveEnemies = 0;
-  G.waveMax = Math.min(6 + G.wave*2, 40);
+  G.waveMax = Math.min(10 + G.wave * 3, 50);
   G.waveState = 'spawning';
   G.waveTimer = 0;
   G.combo = 0;
@@ -340,17 +339,21 @@ function startWave(){
 
 function spawnWaveEnemy(){
   if(G.waveEnemies>=G.waveMax) return;
-  G.waveEnemies++;
-  let type='normal';
-  const r=Math.random();
-  if(G.wave%15===0 && G.waveEnemies===1){
-    type='boss';
-  } else if(G.wave%5===0 && G.wave%15!==0){
-    type=r<0.7?'elite':r<0.85?'heavy':'fast';
-  } else {
-    type=r<0.55?'normal':r<0.75?'fast':r<0.9?'heavy':'elite';
+  // 每波產生 2~4 隻敵人 (割草感)
+  const batch = Math.min(1 + Math.floor(G.wave/3), 4);
+  for(let i=0;i<batch && G.waveEnemies<G.waveMax;i++){
+    G.waveEnemies++;
+    let type='normal';
+    const r=Math.random();
+    if(G.wave%15===0 && G.waveEnemies===1){
+      type='boss';
+    } else if(G.wave%5===0 && G.wave%15!==0){
+      type=r<0.7?'elite':r<0.85?'heavy':'fast';
+    } else {
+      type=r<0.6?'normal':r<0.8?'fast':r<0.95?'heavy':'elite';
+    }
+    G.enemies.push(createEnemy(type,G.wave));
   }
-  G.enemies.push(createEnemy(type,G.wave));
 }
 
 function checkWaveComplete(){
@@ -420,6 +423,8 @@ function playerSwing(){
     e.hp-=dmg;
     e.hitTimer=10;
     hitCount++;
+    // 傷害數字
+    G.dmgNumbers.push({x:e.x+rand(-8,8),y:e.y-rand(5,15),txt:dmg,life:25,color:'#ffcc44'});
 
     if(p.artifacts.includes('clone')){
       const bonus=G.berserkActive?1.5:1;
@@ -481,20 +486,20 @@ function enemyKilled(e,baseAtk){
 
   G.combo++;
   if(G.combo>G.maxCombo) G.maxCombo=G.combo;
-  // 普通掉落
-  spawnDrops(e.x,e.y,Math.random()<0.3?2:0);
-  // 菁英必定掉落好東西
+  // 普通掉落（降低機率）
+  if(Math.random()<0.2) spawnDrops(e.x,e.y,1);
+  // 菁英必定掉落
   if(e.isElite){
-    spawnDrops(e.x,e.y,2);
-    if(Math.random()<0.5) forceDrop(e.x,e.y,'artifact');
+    if(Math.random()<0.4) spawnDrops(e.x,e.y,1);
+    if(Math.random()<0.25) forceDrop(e.x,e.y,'artifact');
     forceDrop(e.x,e.y,'soul');
   }
   // BOSS 必定大量掉落
   if(e.isBoss){
-    spawnDrops(e.x,e.y,5);
+    spawnDrops(e.x,e.y,3);
     forceDrop(e.x,e.y,'artifact');
     forceDrop(e.x,e.y,'soul');
-    forceDrop(e.x,e.y,'weapon');
+    if(Math.random()<0.4) forceDrop(e.x,e.y,'weapon');
   }
 }
 
@@ -505,6 +510,7 @@ function chainLightning(source,dmg){
     const t=targets[i];
     t.hp-=Math.floor(dmg*0.5);
     t.hitTimer=10;t.shockTimer=20;
+    G.dmgNumbers.push({x:t.x+rand(-5,5),y:t.y-rand(5,10),txt:Math.floor(dmg*0.5),life:20,color:'#44ddff'});
     if(G.player.artifacts.includes('ice_orb')) t.slowTimer=30;
     drawLine(source.x,source.y,t.x,t.y,'#44ddff',3);
     addSparks(t.x,t.y,6,'#44ddff',2);
@@ -530,7 +536,8 @@ function castSkill(skillId){
       const r=sk.range||120;
       for(let i=G.enemies.length-1;i>=0;i--){
         const e=G.enemies[i];if(e.dead||dist(p,e)>r)continue;
-        e.hp-=d;e.hitTimer=10;if(e.hp<=0){e.dead=true;enemyKilled(e,d);}
+        e.hp-=d;e.hitTimer=10;G.dmgNumbers.push({x:e.x+rand(-5,5),y:e.y-rand(5,10),txt:d,life:20,color:'#88ccff'});
+        if(e.hp<=0){e.dead=true;enemyKilled(e,d);}
       }
       addEffect(p.x,p.y,r,'#88ccff',15);addSparks(p.x,p.y,25,'#88ccff',5);
       break;
@@ -575,6 +582,7 @@ function castSkill(skillId){
       for(const e of G.enemies){if(!e.dead&&dist(p,e)<td){target=e;td=dist(p,e);}}
       if(target){
         target.hp-=d;target.hitTimer=15;
+        G.dmgNumbers.push({x:target.x+rand(-5,5),y:target.y-rand(5,10),txt:d,life:20,color:'#ffdd44'});
         addEffect(target.x,target.y,30,'#ffdd44',10);addSparks(target.x,target.y,20,'#ffdd44',4);
         if(target.hp<=0){target.dead=true;enemyKilled(target,d);}
       }
@@ -592,7 +600,8 @@ function castSkill(skillId){
         addEffect(p.x,p.y,50,'#8866ff',15);
         for(let i=G.enemies.length-1;i>=0;i--){
           const e=G.enemies[i];if(e.dead||dist(p,e)>r)continue;
-          e.hp-=d;e.hitTimer=10;if(e.hp<=0){e.dead=true;enemyKilled(e,d);}
+        e.hp-=d;e.hitTimer=10;G.dmgNumbers.push({x:e.x+rand(-5,5),y:e.y-rand(5,10),txt:d,life:20,color:'#aaccff'});
+        if(e.hp<=0){e.dead=true;enemyKilled(e,d);}
         }
       }
       break;
@@ -664,10 +673,10 @@ function gameOver(){
 
 function initGame(){
   G.score=0;G.gold=100;G.kills=0;G.stage=1;G.wave=0;
-  G.enemies=[];G.drops=[];G.particles=[];G.effects=[];G.projectiles=[];
+  G.enemies=[];G.drops=[];G.particles=[];G.effects=[];G.projectiles=[];G.dmgNumbers=[];
   G.shakeMag=0;G.combo=0;G.maxCombo=0;
   G.berserkActive=false;G.berserkTimer=0;G.totalTime=0;
-  G.runUpgrades={};G.waveState='idle';
+  G.runUpgrades={};G.waveState='idle';G.readyNext=false;
   const p=G.player;
   p.x=200;p.y=GH/2;p.hp=100;p.maxHp=100;p.speed=3.0;
   p.atk=10;p.range=60;p.atkSpd=0.6;p.def=0;p.slotCount=4;
@@ -711,6 +720,11 @@ function update(){
   if(!G.canSwing){
     G.swingCooldownTimer-=G.dt;
     if(G.swingCooldownTimer<=0){G.canSwing=true;G.swingCooldownTimer=0;}
+  }
+
+  // Auto-attack: 只要 CD 好就自動揮劍
+  if(G.canSwing && !p.isSwinging && G.enemies.some(e=>!e.dead&&dist(p,e)<p.range+60)){
+    playerSwing();
   }
 
   // Berserk timer
@@ -776,21 +790,31 @@ function update(){
     if(G.player.skillTimers[sk.id]<=0) castSkill(sk.id);
   }
 
-  // Drops
-  const magnet=G.player.artifacts.includes('magnet');
+  // Drops（預設自動吸引）
   for(let i=G.drops.length-1;i>=0;i--){
     const d=G.drops[i];d.life--;d.bob+=0.03;
     d.x+=d.vx*0.5;d.y+=d.vy*0.5+Math.sin(d.bob)*0.1;
     d.vx*=0.95;d.vy*=0.95;
     if(d.life<=0){G.drops.splice(i,1);continue;}
-    const pr=magnet?150:G.player.artifacts.includes('magnet')?150:40;
-    if(dist(d,G.player)<pr){
-      if(magnet&&dist(d,G.player)>25){
-        const dd=dist(d,G.player);
-        d.x+=(G.player.x-d.x)/dd*4;d.y+=(G.player.y-d.y)/dd*4;
+    // 自動吸引（所有掉落物自動飛向玩家）
+    const attraction = G.player.artifacts.includes('magnet') ? 250 : 120;
+    if(dist(d,G.player)<attraction){
+      const dd=dist(d,G.player);
+      if(dd>15){
+        const pullSpeed = G.player.artifacts.includes('magnet') ? 6 : 3;
+        d.x+=(G.player.x-d.x)/dd*pullSpeed;
+        d.y+=(G.player.y-d.y)/dd*pullSpeed;
       }
       if(dist(d,G.player)<25){collectDrop(d);G.drops.splice(i,1);}
     }
+  }
+
+  // Damage numbers
+  for(let i=G.dmgNumbers.length-1;i>=0;i--){
+    const dn=G.dmgNumbers[i];
+    dn.y-=1.5;
+    dn.life--;
+    if(dn.life<=0) G.dmgNumbers.splice(i,1);
   }
 
   // Projectiles
@@ -821,10 +845,10 @@ function update(){
     if(G.effects[i].life<=0) G.effects.splice(i,1);
   }
 
-  // Wave spawning
+  // Wave spawning (更快產生更多敵人)
   if(G.waveState==='spawning'){
     G.waveTimer+=G.dt;
-    const iv=Math.max(20,60-G.wave*2);
+    const iv=Math.max(8,35-G.wave*1.5);
     if(G.waveTimer>=iv){G.waveTimer=0;spawnWaveEnemy();if(G.waveEnemies>=G.waveMax) G.waveState='idle';}
   }
   if(G.waveState==='idle'||G.waveState==='spawning') checkWaveComplete();
@@ -984,6 +1008,16 @@ function drawPlayer(){
   // Head
   fillCircle(px,py-12,10,'#3a3a5a');
 
+  // 攻擊範圍指示（微弱圈圈，待命時可見）
+  if(!p.isSwinging){
+    const rangeR = (p.range+WEAPONS[p.weaponIdx].range)*(p.artifacts.includes('cleave')?1.5:1);
+    ctx.strokeStyle='rgba(136,221,255,0.08)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,6]);
+    ctx.beginPath();ctx.arc(px,py,rangeR*0.8,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   // Helmet
   ctx.fillStyle='#4a5a8a';
   ctx.beginPath();ctx.arc(px,py-14,11,Math.PI,0);ctx.fill();
@@ -1022,12 +1056,22 @@ function drawSword(px,py,facing){
     const endA=(arcAngle/2)*facing+(facing>0?0:Math.PI);
     const curA=startA+(endA-startA)*Math.min(1,p.swingProg*1.5);
 
-    // Arc trail
-    setGlow('#88ddff',20);
-    ctx.strokeStyle='rgba(136,221,255,0.3)';
-    ctx.lineWidth=2;
+    // === 明顯的揮斬弧光 ===
+    // 外層大範圍光弧（顯示攻擊範圍）
+    setGlow('#88ddff',35);
+    ctx.strokeStyle='rgba(136,221,255,0.5)';
+    ctx.lineWidth=6;
     ctx.beginPath();
-    ctx.arc(px,py,swordLen*0.7,startA,curA);
+    ctx.arc(px,py,swordLen*0.8,startA,curA);
+    ctx.stroke();
+    noGlow();
+
+    // 內層白色核心弧
+    setGlow('#aaddff',20);
+    ctx.strokeStyle='rgba(200,230,255,0.7)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(px,py,swordLen*0.8,startA,curA);
     ctx.stroke();
     noGlow();
 
@@ -1048,12 +1092,13 @@ function drawSword(px,py,facing){
     ctx.closePath();ctx.fill();
     noGlow();
 
-    // Trail particles
-    if(p.swingProg>0.2&&p.swingProg<0.9){
-      for(let i=0;i<2;i++){
-        const a=curA+rand(-0.2,0.2);
-        addParticle(px+Math.cos(a)*swordLen*0.5,py+Math.sin(a)*swordLen*0.5,rand(-0.5,0.5),rand(-0.5,0.5),10,'rgba(136,221,255,0.5)',rand(2,4));
-      }
+    // 斬擊方向粒子
+    for(let i=0;i<4;i++){
+      const a=curA+rand(-0.3,0.3);
+      const dist2=swordLen*(0.4+rand(0,0.5));
+      addParticle(px+Math.cos(a)*dist2,py+Math.sin(a)*dist2,
+        rand(-1,1)*0.5,rand(-1,1)*0.5,rand(8,15),
+        `rgba(136,221,255,${rand(0.3,0.6)})`,rand(2,5));
     }
   } else {
     // Idle on back
@@ -1189,6 +1234,21 @@ function drawProjectilesList(){
   }
 }
 
+function drawDamageNumbers(){
+  for(const dn of G.dmgNumbers){
+    const alpha=dn.life/25;
+    ctx.fillStyle=`rgba(255,204,68,${alpha})`;
+    ctx.font='bold 14px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(dn.txt,dn.x,dn.y);
+    // 外發光
+    setGlow(`rgba(255,204,68,${alpha*0.3})`,8);
+    ctx.fillText(dn.txt,dn.x,dn.y);
+    noGlow();
+  }
+}
+
 function drawUI(){
   const p=G.player,wep=WEAPONS[p.weaponIdx];
 
@@ -1278,6 +1338,7 @@ function render(){
   drawProjectilesList();
   drawPlayer();
   drawEffectsList();
+  drawDamageNumbers();
 
   ctx.restore();
   drawUI();
@@ -1306,7 +1367,7 @@ function drawTitleScreen(){
   for(let i=0;i<2;i++){const sx=i===0?120:GW-120;ctx.beginPath();ctx.moveTo(sx,120);ctx.lineTo(sx,145);ctx.moveTo(sx-10,128);ctx.lineTo(sx+10,128);ctx.moveTo(sx-6,145);ctx.lineTo(sx+6,145);ctx.stroke();}
 
   ctx.fillStyle='#556688';ctx.font='11px sans-serif';
-  ctx.fillText('橫向守護 · 劍刃無雙',GW/2,240);
+  ctx.fillText('自動揮劍 · 橫向無雙',GW/2,240);
   ctx.fillStyle='#445566';ctx.font='10px sans-serif';
   ctx.fillText(`靈魂碎片: ${G.souls}  |  累計金幣: ${G.gold}`,GW/2,265);
 }
@@ -1369,6 +1430,7 @@ function waveCompleteHTML(){
   let items='';
   for(let i=0;i<G.waveCompleteItems.length;i++){
     const it=G.waveCompleteItems[i];
+    if(it.taken) continue; // 已選取的不再顯示
     let name='',desc='',icon='',extra='';
     if(it.type==='artifact'){name=it.data.name;desc=it.data.desc;icon=it.data.icon;}
     else if(it.type==='skill'){name=it.data.name;desc=it.data.desc;icon=it.data.icon;}
@@ -1377,7 +1439,10 @@ function waveCompleteHTML(){
     const ec=rarityColor(it.data.r||it.data.rarity);
     items+=`<div class="choice-card" onclick="pickItem(${i})"><div class="icon">${icon}</div><div class="cname">${name}</div><div class="cdesc">${desc}</div>${extra?`<div class="cdesc" style="color:${ec}">${extra}</div>`:''}</div>`;
   }
-  return `<div class="modal-box"><h2>🎉 波次 ${G.wave} 完成!</h2><p style="text-align:center;color:#8899bb">選擇一個獎勵</p><div class="choice-grid">${items}</div></div>`;
+  const hasItems=items.length>0;
+  const pickedCount=G.waveCompleteItems.filter(i=>i.taken).length;
+  const statusText=pickedCount>0?`✅ 已選取 ${pickedCount} 個`:'挑選一個強化';
+  return `<div class="modal-box"><h2>🎉 波次 ${G.wave} 完成!</h2><p style="text-align:center;color:#8899bb">${statusText}</p><div class="choice-grid">${items}</div><div style="text-align:center;margin-top:10px"><button class="btn btn-primary" onclick="nextWave()">⚔️ 繼續下一波</button></div></div>`;
 }
 
 function buildingHTML(){
@@ -1435,7 +1500,7 @@ function restHTML(){
   for(const ch of G.restChoices){
     choices+=`<div class="choice-card" onclick="pickRest('${ch.id}')"><div class="icon">${ch.icon}</div><div class="cname" style="color:${ch.color}">${ch.name}</div><div class="cdesc">${ch.desc}</div></div>`;
   }
-  return `<div class="modal-box"><h2>⏸️ 休整</h2><p style="text-align:center;color:#8899bb">第 ${G.stage} 章完成</p><div class="choice-grid">${choices}</div></div>`;
+  return `<div class="modal-box"><h2>⏸️ 休整</h2><p style="text-align:center;color:#8899bb">第 ${G.stage} 章完成</p><div class="choice-grid">${choices}</div><div style="text-align:center;margin-top:10px"><button class="btn btn-primary" onclick="pickRest('skip')">⚔️ 繼續下一章</button></div></div>`;
 }
 
 function permUpgradeHTML(){
@@ -1451,7 +1516,7 @@ function permUpgradeHTML(){
 }
 
 function helpHTML(){
-  return `<div class="modal-box" style="max-width:500px"><h2>📖 操作說明</h2><p style="color:#8899bb;line-height:1.8;font-size:13px">🖱️ <b>移動</b>：滑鼠/手指移動<br>⚔️ <b>攻擊</b>：點擊/觸碰畫面<br>⌨️ <b>空白鍵/Enter</b>：攻擊<br><br>🛡️ <b>守護巨劍</b>不被敵人破壞<br>💎 收集<b>聖物</b>獲得特殊能力<br>🔄 聖物之間有<b>組合效果</b><br>🏪 波次之間可能出現建築<br>⏸️ 每5波為一章，可選擇強化<br><br><span style="color:#cc66ff">💜 靈魂碎片用於永久強化</span></p><button class="btn btn-primary" onclick="closeOverlay()">返回</button></div>`;
+  return `<div class="modal-box" style="max-width:500px"><h2>📖 操作說明</h2><p style="color:#8899bb;line-height:1.8;font-size:13px">🖱️ <b>移動</b>：滑鼠/手指移動（角色自動追隨）<br>⚔️ <b>攻擊</b>：靠近敵人自動揮劍！<br>💎 <b>掉落物</b>：靠近自動吸引收集<br><br>🛡️ <b>守護巨劍</b>不被敵人破壞<br>💎 收集<b>聖物</b>獲得特殊能力<br>🔄 聖物之間有<b>組合效果</b><br>🏪 波次之間可能出現建築<br>⏸️ 每5波為一章，可選擇強化<br><br><span style="color:#cc66ff">💜 靈魂碎片用於永久強化</span></p><button class="btn btn-primary" onclick="closeOverlay()">返回</button></div>`;
 }
 
 // ─── OVERLAY CALLBACKS ──────────────────────────────────────────────────────
@@ -1459,32 +1524,47 @@ function helpHTML(){
 function closeOverlay(){
   G.showOverlay=false;
   OV.innerHTML='';
-  if(G.screen==='gameover'||G.screen==='title') return;
+  if(G.screen==='gameover'||G.screen==='title'){
+    if(G.screen==='title') showOverlay('title');
+    return;
+  }
   if(G.screen==='playing') {
-    if(G.waveState==='complete') G.waveState='idle';
     G.waveTimer=0;
-    setTimeout(()=>{startWave();},300);
+    // 只有當 waveState 是 'complete' 且有按繼續才進下一波
+    if(G.waveState==='complete' && G.readyNext){
+      G.waveState='idle';
+      G.readyNext=false;
+      setTimeout(()=>{startWave();},300);
+    }
   }
 }
 
 function pickItem(idx){
   const item=G.waveCompleteItems[idx];
-  if(!item) return;
+  if(!item||item.taken) return;
+  item.taken=true;
   if(item.type==='artifact'&&!G.player.artifacts.includes(item.data.id)){G.player.artifacts.push(item.data.id);checkSynergies();}
   else if(item.type==='skill'){if(!G.player.skills.includes(item.data.id)){G.player.skills.push(item.data.id);G.player.skillLevels[item.data.id]=1;}else G.player.skillLevels[item.data.id]=(G.player.skillLevels[item.data.id]||1)+1;}
   else if(item.type==='weapon'){const i2=WEAPONS.findIndex(w=>w.id===item.data.id);if(i2>G.player.weaponIdx)G.player.weaponIdx=i2;}
   else if(item.type==='equip'){const eq=item.data,old=G.player.equips[eq.type];if(!old||eq.rarity>old.rarity)G.player.equips[eq.type]=eq;}
   recalcStats();
+  showOverlay('wavecomplete'); // 重新顯示可選項目 + 繼續按鈕
+}
+
+function nextWave(){
+  G.readyNext=true;
   closeOverlay();
 }
 
 function pickRest(id){
+  G.readyNext=true;
   closeOverlay();
   switch(id){
     case 'heal':G.guardian.hp=G.guardian.maxHp;G.player.hp=G.player.maxHp;addEffect(G.guardian.x,G.guardian.y,40,'#66ff88',20);break;
     case 'gold':G.gold+=200;addEffect(G.player.x,G.player.y,30,'#ffcc44',15);break;
     case 'atk_buff':G.runUpgrades.atk=(G.runUpgrades.atk||0)+5;recalcStats();addEffect(G.player.x,G.player.y,35,'#ff6644',20);break;
     case 'drop_buff':G.runUpgrades.gold=(G.runUpgrades.gold||0)+5;recalcStats();addEffect(G.player.x,G.player.y,35,'#cc66ff',20);break;
+    case 'skip':break; // 啥都不選直接繼續
   }
   G.stage++;
 }
