@@ -13,9 +13,8 @@ canvas{display:block;width:100%;height:100%;cursor:crosshair}
 <body><canvas id="gc"></canvas>
 <script>
 // ════════════════════════════════════════════════════════════
-//  巨劍守護 · Guardian Blade  v2.0
-//  靈感: 赤之劍 (Red Sword) by Tatsuki
-//  系統: 裝備、強化、道具、建築、周目繼承
+//  巨劍守護 · Guardian Blade  v2.1
+//  系統: 裝備、強化、道具、建築、關卡、Boss
 // ════════════════════════════════════════════════════════════
 const $=document.getElementById('gc'),C=$.getContext('2d'),ctx=C;
 let W,H,S,GW=900,GH=640;
@@ -25,6 +24,9 @@ addEventListener('resize',rs);rs();
 // ═══ 工具 ═══
 const r=(a,b)=>Math.random()*(b-a)+a,ri=(a,b)=>Math.floor(r(a,b+1)),d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),cl=(v,m,M)=>Math.max(m,Math.min(M,v));
 
+// ═══ 關卡常數 ═══
+const STAGE_WAVES=5; // 每5波為一個關卡
+
 // ═══ 稀有度 ═══
 const RR={common:{n:'普通',c:'#aaa',g:'rgba(170,170,170,0.3)'},uncommon:{n:'高級',c:'#4c4',g:'rgba(68,204,68,0.3)'},rare:{n:'稀有',c:'#48f',g:'rgba(68,136,255,0.3)'},epic:{n:'史詩',c:'#b4f',g:'rgba(187,68,255,0.3)'},legendary:{n:'傳說',c:'#fa4',g:'rgba(255,170,68,0.4)'}};
 const R_ORD=['common','uncommon','rare','epic','legendary'];
@@ -33,8 +35,6 @@ function rollR(){let t=Object.values(R_WT).reduce((a,b)=>a+b,0),m=Math.random()*
 function gRC(r){return RR[r]?.c||'#aaa'}
 
 // ═══ 裝備資料庫 ═══
-// 每件裝備: id,name,rarity,type,base{stats},desc
-// 強化倍率: 1+lv*0.2 (lv=0~15)
 const WEAPONS=[
 {id:'iron_sword',name:'鐵劍',rarity:'common',type:'weapon',atk:1.0,ran:1.0,spd:1.0,desc:'普通的鐵劍'},
 {id:'wood_sword',name:'木刀',rarity:'common',type:'weapon',atk:0.8,ran:0.9,spd:1.3,desc:'輕快的木刀'},
@@ -48,33 +48,27 @@ const WEAPONS=[
 {id:'celestial',name:'天極之劍',rarity:'legendary',type:'weapon',atk:2.3,ran:1.4,spd:1.2,desc:'眾神之物'},
 {id:'chaos_blade',name:'混沌之刃',rarity:'legendary',type:'weapon',atk:2.5,ran:1.2,spd:1.1,desc:'虛空混沌'},
 ];
-// 其他裝備類型
 const EQUIPS=[
-// helmets
 {id:'cloth_helm',name:'布帽',rarity:'common',type:'helmet',crit:2,desc:'+2% 暴擊'},
 {id:'leather_helm',name:'皮帽',rarity:'uncommon',type:'helmet',crit:5,desc:'+5% 暴擊'},
 {id:'iron_helm',name:'鐵頭盔',rarity:'rare',type:'helmet',crit:8,def:3,desc:'+8%暴擊 +3%減傷'},
 {id:'dragon_helm',name:'龍首盔',rarity:'epic',type:'helmet',crit:12,def:6,desc:'+12%暴擊 +6%減傷'},
 {id:'crown',name:'神冠',rarity:'legendary',type:'helmet',crit:20,def:10,all:5,desc:'+20%暴擊 +10%減傷 +5%全屬性'},
-// armor
 {id:'cloth_armor',name:'布甲',rarity:'common',type:'armor',hp:15,desc:'+15 守護HP'},
 {id:'leather_armor',name:'皮甲',rarity:'uncommon',type:'armor',hp:30,def:5,desc:'+30HP +5%減傷'},
 {id:'iron_armor',name:'鐵甲',rarity:'rare',type:'armor',hp:60,def:8,desc:'+60HP +8%減傷'},
 {id:'dragon_armor',name:'龍鱗甲',rarity:'epic',type:'armor',hp:120,def:12,desc:'+120HP +12%減傷'},
 {id:'divine_armor',name:'神鎧',rarity:'legendary',type:'armor',hp:250,def:20,all:8,desc:'+250HP +20%減傷 +8%全屬'},
-// cape
 {id:'rag_cape',name:'破布披風',rarity:'common',type:'cape',spd:3,desc:'+3% 速度'},
 {id:'travel_cape',name:'旅行披風',rarity:'uncommon',type:'cape',spd:6,dodge:2,desc:'+6%速度 +2%閃避'},
 {id:'shadow_cape',name:'暗影披風',rarity:'rare',type:'cape',spd:10,dodge:5,desc:'+10%速度 +5%閃避'},
 {id:'dragon_cape',name:'龍翼披風',rarity:'epic',type:'cape',spd:15,dodge:8,desc:'+15%速度 +8%閃避'},
 {id:'divine_cape',name:'神翼',rarity:'legendary',type:'cape',spd:25,dodge:12,all:5,desc:'+25%速度 +12%閃避 +5%全屬'},
-// gloves
 {id:'cloth_gloves',name:'布手套',rarity:'common',type:'gloves',aspd:3,desc:'+3% 攻速'},
 {id:'leather_gloves',name:'皮手套',rarity:'uncommon',type:'gloves',aspd:6,atk:3,desc:'+6%攻速 +3%傷害'},
 {id:'iron_gloves',name:'鐵手套',rarity:'rare',type:'gloves',aspd:10,atk:5,desc:'+10%攻速 +5%傷害'},
 {id:'dragon_gloves',name:'龍爪手套',rarity:'epic',type:'gloves',aspd:15,atk:8,desc:'+15%攻速 +8%傷害'},
 {id:'divine_gloves',name:'神之手',rarity:'legendary',type:'gloves',aspd:22,atk:12,all:5,desc:'+22%攻速 +12%傷害 +5%全屬'},
-// boots
 {id:'straw_boots',name:'草鞋',rarity:'common',type:'boots',mspd:5,desc:'+5% 移速'},
 {id:'leather_boots',name:'皮靴',rarity:'uncommon',type:'boots',mspd:8,desc:'+8% 移速'},
 {id:'iron_boots',name:'鐵靴',rarity:'rare',type:'boots',mspd:12,dodge:3,desc:'+12%移速 +3%閃避'},
@@ -94,7 +88,7 @@ const ITEMS=[
 {id:'fury_pot',name:'狂怒藥水',rarity:'epic',type:'buff',desc:'+60%攻速 持續1波',buff:'aspd',val:60,icon:'🔥'},
 ];
 
-// ═══ 技能(擴充) ═══
+// ═══ 技能 ═══
 const SKILLS=[
 {id:'sword_wave',name:'劍氣斬',rarity:'common',cd:2.5,dmg:30,type:'projectile',color:'#8cf',desc:'發出劍氣波'},
 {id:'fireball',name:'火球術',rarity:'uncommon',cd:3.0,dmg:48,type:'projectile',color:'#f62',desc:'發射火球轟炸'},
@@ -119,13 +113,13 @@ function loadProg(){
 }
 const PROG={
   soulFragments:0,
-  permItemSlots:1, // 永久道具格 (max 4)
-  permSkillSlots:1, // 永久技能格 (max 8)
-  inheritEquip:0, // 繼承裝備數 (max 3)
-  inheritSkill:0, // 繼承技能數 (max 3)
-  startGoldBonus:0, // 初始金幣+50每級
-  permAtkBonus:0, // 永久攻擊加成 (%) 每級+5
-  permHpBonus:0, // 永久守護HP加成 (%) 每級+5
+  permItemSlots:1,
+  permSkillSlots:1,
+  inheritEquip:0,
+  inheritSkill:0,
+  startGoldBonus:0,
+  permAtkBonus:0,
+  permHpBonus:0,
   totalRuns:0,
   bestWave:0,
 };
@@ -143,17 +137,14 @@ const PERM_UPGRADES=[
 
 // ═══ 遊戲狀態 ═══
 const G={
-  state:'menu', // menu|playing|building|waveComplete|gameOver|permUpgrade
-  wave:0,score:0,gold:0,totalGold:0,kills:0,
+  state:'menu',
+  wave:0,stage:0,waveInStage:0,score:0,gold:0,totalGold:0,kills:0,
   time:0,dt:0,screenShake:0,combo:0,comboTimer:0,slowMo:0,
-  // buffs (wave 級)
   buffs:{crit:0,atk:0,drop:0,gold:0,def:0,aspd:0},
-  // 暫時格
-  tempItemSlots:0,
-  tempSkillSlots:0,
-  // 繼承
-  inheritedEquips:[],
-  inheritedSkills:[],
+  tempItemSlots:0,tempSkillSlots:0,
+  inheritedEquips:[],inheritedSkills:[],
+  // 建築隨機性
+  wavesSinceBuilding:0,
 };
 
 // ═══ 基礎配置 ═══
@@ -166,11 +157,8 @@ const CFG={
 // ═══ 背包/裝備 ═══
 const INV={
   weapon:null,helmet:null,armor:null,cape:null,gloves:null,boots:null,
-  items:[], // 道具/消耗品
-  skills:[], // 已學技能
-  equippedSkills:[],
+  items:[],skills:[],equippedSkills:[],
   itemSlotMax:4,skillSlotMax:8,
-
   getWeapon(){return this.weapon||WEAPONS[0]},
   getWeaponLv(){return this.weapon?.lv||0},
   equip(type,item){
@@ -196,7 +184,6 @@ const INV={
     if(it.type==='buff'){this.items.splice(idx,1);return it;}
     return null;
   },
-  // 計算總統計
   calcStats(){
     const w=this.getWeapon(),wl=this.getWeaponLv(),wm=1+wl*0.2;
     let s={
@@ -216,10 +203,8 @@ const INV={
       if(eq.atk)s.atk*=1+eq.atk*em/100;
       if(eq.all){s.atk*=1+eq.all*em/100;s.mspd*=1+eq.all*em/100;s.crit+=eq.all*em;s.def+=eq.all*em/2;s.dodge+=eq.all*em/2;}
     }
-    // 永久加成
     s.atk*=1+PROG.permAtkBonus*0.05;
     s.hpBonus+=PROG.permHpBonus*5;
-    // buffs
     if(G.buffs.crit)s.crit+=G.buffs.crit;
     if(G.buffs.atk)s.atk*=1+G.buffs.atk/100;
     if(G.buffs.drop)s.dropRate*=1+G.buffs.drop/100;
@@ -272,38 +257,38 @@ update(dt){
   }
   if(this.swinging&&Math.random()<0.5){const a=this.ang+this.swA,l=CFG.swordLen*INV.calcStats().ran;pt.push(new PT(this.x+Math.cos(a)*l,this.y+Math.sin(a)*l,r(-20,20),r(-20,20),'rgba(180,220,255,0.5)',r(0.15,0.3),r(3,5)))}
 },
-draw(ctx){
+draw(CX){
   const w=INV.getWeapon(),rc=gRC(w.rarity);
-  ctx.save();ctx.translate(this.x,this.y);
-  const au=ctx.createRadialGradient(0,0,5,0,0,40);
+  CX.save();CX.translate(this.x,this.y);
+  const au=CX.createRadialGradient(0,0,5,0,0,40);
   au.addColorStop(0,'rgba(180,220,255,0.1)');au.addColorStop(1,'rgba(180,220,255,0)');
-  ctx.fillStyle=au;ctx.beginPath();ctx.arc(0,0,40,0,Math.PI*2);ctx.fill();
-  ctx.shadowColor=rc;ctx.shadowBlur=12;
-  const bg=ctx.createLinearGradient(-this.r,-this.r,this.r,this.r);
+  CX.fillStyle=au;CX.beginPath();CX.arc(0,0,40,0,Math.PI*2);CX.fill();
+  CX.shadowColor=rc;CX.shadowBlur=12;
+  const bg=CX.createLinearGradient(-this.r,-this.r,this.r,this.r);
   bg.addColorStop(0,'#5a7a9a');bg.addColorStop(0.5,'#3a5a7a');bg.addColorStop(1,'#2a3a5a');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
-  ctx.shadowBlur=8;ctx.fillStyle='#7a9aba';ctx.beginPath();ctx.arc(0,-3,this.r*0.6,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#5af';ctx.shadowBlur=0;ctx.fillRect(-7,-6,14,4);
-  ctx.restore();
+  CX.fillStyle=bg;CX.beginPath();CX.arc(0,0,this.r,0,Math.PI*2);CX.fill();
+  CX.shadowBlur=8;CX.fillStyle='#7a9aba';CX.beginPath();CX.arc(0,-3,this.r*0.6,0,Math.PI*2);CX.fill();
+  CX.fillStyle='#5af';CX.shadowBlur=0;CX.fillRect(-7,-6,14,4);
+  CX.restore();
   if(this.swinging){
-    ctx.save();ctx.translate(this.x,this.y);
+    CX.save();CX.translate(this.x,this.y);
     const sa=this.ang+this.swA,st=INV.calcStats();
     const len=st.ran;
-    const gl=ctx.createRadialGradient(0,0,5,0,0,len*1.2);
+    const gl=CX.createRadialGradient(0,0,5,0,0,len*1.2);
     gl.addColorStop(0,`${rc}22`);gl.addColorStop(1,`${rc}00`);
-    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,len*1.2,0,Math.PI*2);ctx.fill();
-    ctx.rotate(sa);
-    const grd=ctx.createLinearGradient(20,0,len+20,0);
+    CX.fillStyle=gl;CX.beginPath();CX.arc(0,0,len*1.2,0,Math.PI*2);CX.fill();
+    CX.rotate(sa);
+    const grd=CX.createLinearGradient(20,0,len+20,0);
     grd.addColorStop(0,'rgba(255,255,255,0.9)');grd.addColorStop(0.4,rc);
     grd.addColorStop(0.7,'rgba(150,200,255,0.4)');grd.addColorStop(1,'rgba(150,200,255,0.1)');
-    ctx.fillStyle=grd;ctx.shadowColor=rc;ctx.shadowBlur=25;
-    ctx.beginPath();ctx.roundRect(20,-CFG.swordW/2,len,CFG.swordW,4);ctx.fill();
-    ctx.shadowBlur=10;ctx.fillStyle='rgba(255,255,255,0.8)';
-    ctx.beginPath();ctx.moveTo(len+20,-CFG.swordW/2-2);ctx.lineTo(len+40,0);ctx.lineTo(len+20,CFG.swordW/2+2);ctx.fill();
-    ctx.fillStyle='#8a7a5a';ctx.shadowBlur=5;ctx.fillRect(10,-CFG.swordW/2-6,12,CFG.swordW+12);
-    ctx.restore();
-    ctx.save();ctx.strokeStyle=`${rc}22`;ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(this.x,this.y,CFG.swordLen*0.6,this.ang-Math.PI*0.6,this.ang+Math.PI*0.6);ctx.stroke();ctx.restore();
+    CX.fillStyle=grd;CX.shadowColor=rc;CX.shadowBlur=25;
+    CX.beginPath();CX.roundRect(20,-CFG.swordW/2,len,CFG.swordW,4);CX.fill();
+    CX.shadowBlur=10;CX.fillStyle='rgba(255,255,255,0.8)';
+    CX.beginPath();CX.moveTo(len+20,-CFG.swordW/2-2);CX.lineTo(len+40,0);CX.lineTo(len+20,CFG.swordW/2+2);CX.fill();
+    CX.fillStyle='#8a7a5a';CX.shadowBlur=5;CX.fillRect(10,-CFG.swordW/2-6,12,CFG.swordW+12);
+    CX.restore();
+    CX.save();CX.strokeStyle=`${rc}22`;CX.lineWidth=2;
+    CX.beginPath();CX.arc(this.x,this.y,CFG.swordLen*0.6,this.ang-Math.PI*0.6,this.ang+Math.PI*0.6);CX.stroke();CX.restore();
   }
 }};
 
@@ -312,48 +297,71 @@ const CS={x:GW/2,y:GH*0.22,hp:200,maxHP:200,glow:0,hitT:0,
 reset(){this.maxHP=CFG.centerHP;this.hp=this.maxHP;this.glow=0;this.hitT=0},
 takeDmg(d){this.hp-=d;this.hitT=.3;G.screenShake=6;if(this.hp<=0){this.hp=0;gameOver()}},
 update(dt){this.glow+=dt*2;if(this.hitT>0)this.hitT-=dt},
-draw(ctx){
-  ctx.save();ctx.translate(this.x,this.y);
-  const sc=1+Math.sin(this.glow)*0.05;ctx.scale(sc,sc);
-  const ri=ctx.createRadialGradient(0,0,10,0,0,80);
+draw(CX){
+  CX.save();CX.translate(this.x,this.y);
+  const sc=1+Math.sin(this.glow)*0.05;CX.scale(sc,sc);
+  const ri=CX.createRadialGradient(0,0,10,0,0,80);
   ri.addColorStop(0,'rgba(120,80,200,0.15)');ri.addColorStop(0.5,'rgba(120,80,200,0.05)');ri.addColorStop(1,'rgba(120,80,200,0)');
-  ctx.fillStyle=ri;ctx.beginPath();ctx.arc(0,0,80,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle=`rgba(140,100,220,${0.15+Math.sin(this.glow)*0.05})`;ctx.lineWidth=1.5;ctx.setLineDash([6,6]);
-  ctx.beginPath();ctx.arc(0,0,55,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  CX.fillStyle=ri;CX.beginPath();CX.arc(0,0,80,0,Math.PI*2);CX.fill();
+  CX.strokeStyle=`rgba(140,100,220,${0.15+Math.sin(this.glow)*0.05})`;CX.lineWidth=1.5;CX.setLineDash([6,6]);
+  CX.beginPath();CX.arc(0,0,55,0,Math.PI*2);CX.stroke();CX.setLineDash([]);
   const hit=this.hitT>0,clr=hit?'#f44':'#a86eff';
-  ctx.shadowColor=clr;ctx.shadowBlur=hit?40:25;
-  const bg=ctx.createLinearGradient(0,-80,0,20);
+  CX.shadowColor=clr;CX.shadowBlur=hit?40:25;
+  const bg=CX.createLinearGradient(0,-80,0,20);
   if(hit){bg.addColorStop(0,'#f44');bg.addColorStop(0.5,'#f88');bg.addColorStop(1,'#f44')}
   else{bg.addColorStop(0,'#a86eff');bg.addColorStop(0.5,'#d4b0ff');bg.addColorStop(1,'#7a4ad4')}
-  ctx.fillStyle=bg;
-  ctx.beginPath();ctx.moveTo(-8,20);ctx.lineTo(-5,-70);ctx.lineTo(0,-80);ctx.lineTo(5,-70);ctx.lineTo(8,20);ctx.closePath();ctx.fill();
-  ctx.shadowBlur=10;ctx.fillStyle=hit?'#c33':'#5a3a8a';ctx.fillRect(-16,18,32,8);
-  ctx.fillStyle='#3a2a4a';ctx.shadowBlur=5;ctx.fillRect(-5,26,10,20);
-  ctx.shadowColor='#a86eff';ctx.shadowBlur=20;ctx.fillStyle='#d4b0ff';
-  ctx.beginPath();ctx.arc(0,-75,5,0,Math.PI*2);ctx.fill();
-  ctx.restore();
+  CX.fillStyle=bg;
+  CX.beginPath();CX.moveTo(-8,20);CX.lineTo(-5,-70);CX.lineTo(0,-80);CX.lineTo(5,-70);CX.lineTo(8,20);CX.closePath();CX.fill();
+  CX.shadowBlur=10;CX.fillStyle=hit?'#c33':'#5a3a8a';CX.fillRect(-16,18,32,8);
+  CX.fillStyle='#3a2a4a';CX.shadowBlur=5;CX.fillRect(-5,26,10,20);
+  CX.shadowColor='#a86eff';CX.shadowBlur=20;CX.fillStyle='#d4b0ff';
+  CX.beginPath();CX.arc(0,-75,5,0,Math.PI*2);CX.fill();
+  CX.restore();
   const bw=120,bh=10,bx=this.x-bw/2,by=this.y-100;
-  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.roundRect(bx-2,by-2,bw+4,bh+4,4);ctx.fill();
+  CX.fillStyle='rgba(0,0,0,0.6)';CX.roundRect(bx-2,by-2,bw+4,bh+4,4);CX.fill();
   const rr=this.hp/this.maxHP;
-  ctx.fillStyle=rr>0.5?`hsl(${rr*120},100%,50%)`:'#f44';
-  ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;ctx.roundRect(bx,by,bw*rr,bh,3);ctx.fill();ctx.shadowBlur=0;
-  ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
-  ctx.fillText(`${Math.ceil(this.hp)}/${this.maxHP}`,this.x,by+10);
+  CX.fillStyle=rr>0.5?`hsl(${rr*120},100%,50%)`:'#f44';
+  CX.shadowColor=CX.fillStyle;CX.shadowBlur=10;CX.roundRect(bx,by,bw*rr,bh,3);CX.fill();CX.shadowBlur=0;
+  CX.fillStyle='#fff';CX.font='bold 11px sans-serif';CX.textAlign='center';
+  CX.fillText(`${Math.ceil(this.hp)}/${this.maxHP}`,this.x,by+10);
 }};
 
 // ═══ 敵人 ═══
 let enemies=[];
 class EM{
-  constructor(wv){
+  constructor(wv,forceType){
     const sd=ri(0,3);
     if(sd===0){this.x=-30;this.y=r(GH*0.15,GH*0.7)}
     else if(sd===1){this.x=GW+30;this.y=r(GH*0.15,GH*0.7)}
     else if(sd===2){this.x=r(0,GW);this.y=-30}
     else{this.x=r(0,GW);this.y=GH+30}
-    const ro=Math.random();
-    if(ro<0.55){this.r=14;this.maxHP=CFG.baseEnemyHP*(1+wv*0.15);this.spd=CFG.enemySpd*(1+wv*0.03);this.dmg=8+wv*0.5;this.color='#d43a3a';this.gv=6;this.type='n'}
-    else if(ro<0.8){this.r=10;this.maxHP=CFG.baseEnemyHP*0.6*(1+wv*0.12);this.spd=CFG.enemySpd*1.6*(1+wv*0.03);this.dmg=5+wv*0.3;this.color='#d4a63a';this.gv=4;this.type='f'}
-    else{this.r=22;this.maxHP=CFG.baseEnemyHP*2.5*(1+wv*0.18);this.spd=CFG.enemySpd*0.6*(1+wv*0.02);this.dmg=15+wv;this.color='#4a3ad4';this.gv=14;this.type='h'}
+
+    // 決定類型: 可強制指定(菁英/Boss)
+    this.etype=forceType||'n';
+    const wm=1+wv*0.15;
+
+    if(this.etype==='b'){ // Boss
+      const stage=Math.floor((wv-1)/STAGE_WAVES)+1;
+      this.r=38+stage*2;
+      this.maxHP=CFG.baseEnemyHP*8*wm*(1+stage*0.3);
+      this.spd=CFG.enemySpd*0.55;
+      this.dmg=25+wv*1.5;
+      this.color='#d02050';
+      this.gv=80+stage*20;
+      this.etype='b';
+    }else if(this.etype==='e'){ // 菁英
+      this.r=24;
+      this.maxHP=CFG.baseEnemyHP*3*wm;
+      this.spd=CFG.enemySpd*0.8*(1+wv*0.02);
+      this.dmg=14+wv*0.8;
+      this.color='#d4a030';
+      this.gv=30+Math.floor(wv*0.5);
+    }else{
+      const ro=Math.random();
+      if(ro<0.55){this.r=14;this.maxHP=CFG.baseEnemyHP*wm;this.spd=CFG.enemySpd*(1+wv*0.03);this.dmg=8+wv*0.5;this.color='#d43a3a';this.gv=6;this.etype='n'}
+      else if(ro<0.8){this.r=10;this.maxHP=CFG.baseEnemyHP*0.6*(1+wv*0.12);this.spd=CFG.enemySpd*1.6*(1+wv*0.03);this.dmg=5+wv*0.3;this.color='#d4a63a';this.gv=4;this.etype='f'}
+      else{this.r=22;this.maxHP=CFG.baseEnemyHP*2.5*(1+wv*0.18);this.spd=CFG.enemySpd*0.6*(1+wv*0.02);this.dmg=15+wv;this.color='#4a3ad4';this.gv=14;this.etype='h'}
+    }
     this.hp=this.maxHP;this.dmgCD=0;this.flash=0;this.kx=0;this.ky=0;
   }
   takeDmg(d,ka){
@@ -366,10 +374,14 @@ class EM{
     const st=INV.calcStats();
     const ga=Math.floor(this.gv*st.goldMult*(1+G.wave*0.05));
     G.gold+=ga;G.totalGold+=ga;G.score+=Math.floor(this.maxHP*0.5);
-    for(let i=0;i<3;i++)pt.push(new PT(this.x,this.y,r(-60,60),r(-80,-20),`hsl(45,100%,${60+r(0,30)}%)`,r(.4,.7),r(2,4)));
+    const ptCount=this.etype==='b'?20:(this.etype==='e'?10:3);
+    for(let i=0;i<ptCount;i++)pt.push(new PT(this.x,this.y,r(-60,60),r(-80,-20),`hsl(45,100%,${60+r(0,30)}%)`,r(.4,.7),r(2,4)));
     DN.push({x:this.x+r(-10,10),y:this.y-20,txt:`+${ga}💰`,life:1,max:1,isGold:true});
-    tryDrop(this.x,this.y);
-    G.screenShake=Math.max(G.screenShake,2);
+    // Boss/菁英保證掉落
+    if(this.etype==='b'){forceDrop(this.x,this.y,'legendary');forceDrop(this.x,this.y,'epic')}
+    else if(this.etype==='e'){if(Math.random()<0.6)forceDrop(this.x,this.y,'rare')}
+    else tryDrop(this.x,this.y);
+    G.screenShake=Math.max(G.screenShake,this.etype==='b'?12:(this.etype==='e'?5:2));
     if(G.combo>8&&Math.random()<0.3)G.slowMo=.08;
   }
   update(dt){
@@ -380,18 +392,34 @@ class EM{
     if(dd<this.r+40){if(this.dmgCD<=0){const st=INV.calcStats(),dmgRed=st.def/100;CS.takeDmg(this.dmg*(1-Math.min(dmgRed,.8)));this.dmgCD=.8;for(let i=0;i<5;i++)pt.push(new PT(CS.x,CS.y,r(-80,80),r(-80,80),'#f44',r(.3,.5),r(3,5)))}}
     if(this.dmgCD>0)this.dmgCD-=dt;
   }
-  draw(ctx){
-    ctx.save();ctx.translate(this.x,this.y);
+  draw(CX){
+    CX.save();CX.translate(this.x,this.y);
     const cl=this.flash>0?'#fff':this.color;
-    ctx.shadowColor=cl;ctx.shadowBlur=this.flash>0?15:6;
-    const bg=ctx.createRadialGradient(-2,-2,2,0,0,this.r);
+    CX.shadowColor=cl;CX.shadowBlur=this.flash>0?15:6;
+    // Boss有大型光暈
+    if(this.etype==='b'){CX.shadowBlur=40;CX.shadowColor='#f44'}
+    else if(this.etype==='e'){CX.shadowBlur=20;CX.shadowColor='#fa4'}
+    const bg=CX.createRadialGradient(-2,-2,2,0,0,this.r);
     bg.addColorStop(0,lt(cl,40));bg.addColorStop(1,cl);
-    ctx.fillStyle=bg;ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;ctx.fillStyle=this.flash>0?'#000':'#ff0';
-    const eo=this.r*0.3;ctx.fillRect(-eo-3,-2,4,4);ctx.fillRect(eo-1,-2,4,4);
-    if(this.hp<this.maxHP){const bw=this.r*2.5,bh=3;ctx.fillStyle='rgba(0,0,0,0.5)';ctx.roundRect(-bw/2,-this.r-7,bw,bh,1.5);ctx.fill();ctx.fillStyle=this.hp/this.maxHP>0.5?'#4a4':'#f44';ctx.roundRect(-bw/2,-this.r-7,bw*(this.hp/this.maxHP),bh,1.5);ctx.fill()}
-    ctx.restore();
+    CX.fillStyle=bg;CX.beginPath();CX.arc(0,0,this.r,0,Math.PI*2);CX.fill();
+    CX.shadowBlur=0;
+    // 菁英/Boss標記
+    if(this.etype==='b'){CX.fillStyle='#fff';CX.font='bold 14px sans-serif';CX.textAlign='center';CX.textBaseline='middle';CX.fillText('👑',0,-this.r-12)}
+    else if(this.etype==='e'){CX.fillStyle='#ff0';CX.font='12px sans-serif';CX.textAlign='center';CX.textBaseline='middle';CX.fillText('⭐',0,-this.r-8)}
+    CX.fillStyle=this.flash>0?'#000':'#ff0';
+    const eo=this.r*0.3;CX.fillRect(-eo-3,-2,4,4);CX.fillRect(eo-1,-2,4,4);
+    if(this.hp<this.maxHP){const bw=this.r*2.5,bh=3;CX.fillStyle='rgba(0,0,0,0.5)';CX.roundRect(-bw/2,-this.r-7,bw,bh,1.5);CX.fill();CX.fillStyle=this.hp/this.maxHP>0.5?'#4a4':'#f44';CX.roundRect(-bw/2,-this.r-7,bw*(this.hp/this.maxHP),bh,1.5);CX.fill()}
+    CX.restore();
   }
+}
+
+// 強制掉落
+function forceDrop(x,y,rarity){
+  const rv=Math.random();
+  if(rv<0.35){const cand=WEAPONS.filter(w=>w.rarity===rarity);if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'weapon',id:pick.id,lv:0},rarity,false))}}
+  else if(rv<0.6){const cand=EQUIPS.filter(e=>e.rarity===rarity);if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'equip',id:pick.id,lv:0},rarity,false))}}
+  else if(rv<0.8){const cand=SKILLS.filter(s=>s.rarity===rarity&&!INV.skills.find(x=>x.id===s.id));if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'skill',id:pick.id},rarity,false))}}
+  else{const cand=ITEMS.filter(i=>i.rarity===rarity);if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'item',id:pick.id},rarity,false))}}
 }
 
 // ═══ 投射物 ═══
@@ -403,7 +431,7 @@ class PR{
     for(const e of enemies){if(!e||e.hp<=0)continue;if(d(this,e)<this.r+e.r){e.takeDmg(this.dmg,Math.atan2(e.y-this.y,e.x-this.x));for(let i=0;i<5;i++)pt.push(new PT(this.x,this.y,r(-40,40),r(-40,40),this.clr,r(.2,.4),r(2,4)));this.alive=false;return}}
     if(this.x<-50||this.x>GW+50||this.y<-50||this.y>GH+50)this.alive=false;
   }
-  draw(ctx){ctx.save();ctx.shadowColor=this.clr;ctx.shadowBlur=15;ctx.fillStyle=this.clr;ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();if(this.skId==='sword_wave'){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(this.x,this.y,this.r+4,0,Math.PI*2);ctx.stroke()}ctx.restore()}
+  draw(CX){CX.save();CX.shadowColor=this.clr;CX.shadowBlur=15;CX.fillStyle=this.clr;CX.beginPath();CX.arc(this.x,this.y,this.r,0,Math.PI*2);CX.fill();if(this.skId==='sword_wave'){CX.strokeStyle='#fff';CX.lineWidth=2;CX.beginPath();CX.arc(this.x,this.y,this.r+4,0,Math.PI*2);CX.stroke()}CX.restore()}
 }
 
 // ═══ 技能施放 ═══
@@ -470,18 +498,18 @@ class GI{
     for(let i=0;i<8;i++){const c=gRC(this.rarity);pt.push(new PT(this.x,this.y,r(-60,60),r(-60,60),c,r(.3,.6),r(2,5)))}
     this.life=0;
   }
-  draw(ctx){
+  draw(CX){
     if(this.life<=0)return;
     const al=Math.min(1,this.life/3),rc=RR[this.rarity]||RR.common,by=this.y+Math.sin(this.bob)*3;
-    ctx.save();ctx.globalAlpha=al;
-    const gl=ctx.createRadialGradient(this.x,by,2,this.x,by,25);
+    CX.save();CX.globalAlpha=al;
+    const gl=CX.createRadialGradient(this.x,by,2,this.x,by,25);
     gl.addColorStop(0,rc.g);gl.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(this.x,by,25,0,Math.PI*2);ctx.fill();
-    ctx.shadowColor=rc.c;ctx.shadowBlur=15;
+    CX.fillStyle=gl;CX.beginPath();CX.arc(this.x,by,25,0,Math.PI*2);CX.fill();
+    CX.shadowColor=rc.c;CX.shadowBlur=15;
     let icon='💎';if(this.item.type==='weapon')icon='🗡️';else if(this.item.type==='equip')icon='🛡️';else if(this.item.type==='skill')icon='📜';else if(this.item.type==='item'){const im=ITEMS.find(x=>x.id===this.item.id);icon=im?im.icon:'📦'}else if(this.item.type==='soul')icon='💎';
     if(this.isUpgrade)icon='⬆️';
-    ctx.font='20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon,this.x,by);
-    ctx.restore();
+    CX.font='20px sans-serif';CX.textAlign='center';CX.textBaseline='middle';CX.fillText(icon,this.x,by);
+    CX.restore();
   }
 }
 
@@ -492,29 +520,27 @@ function tryDrop(x,y){
   const rarity=rollR();
   const rv=Math.random();
   let isUpgrade=false;
-  // 決定掉落類型
-  if(rv<0.3){ // 武器
+  if(rv<0.3){
     const cand=WEAPONS.filter(w=>w.rarity===rarity);
     if(cand.length){const pick=cand[ri(0,cand.length-1)];
-      // 如果已有，變成+1升級版
       const existing=INV.hasEquip(pick.id);
       const lv=existing?1:0;
       groundItems.push(new GI(x,y,{type:'weapon',id:pick.id,lv},rarity,existing));
     }
-  }else if(rv<0.5){ // 裝備(非武器)
+  }else if(rv<0.5){
     const cand=EQUIPS.filter(e=>e.rarity===rarity);
     if(cand.length){const pick=cand[ri(0,cand.length-1)];
       const existing=INV.hasEquip(pick.id);
       const lv=existing?1:0;
       groundItems.push(new GI(x,y,{type:'equip',id:pick.id,lv},rarity,existing));
     }
-  }else if(rv<0.7){ // 技能
+  }else if(rv<0.7){
     const cand=SKILLS.filter(s=>s.rarity===rarity&&!INV.skills.find(x=>x.id===s.id));
     if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'skill',id:pick.id},rarity,false))}
-  }else if(rv<0.9){ // 道具
+  }else if(rv<0.9){
     const cand=ITEMS.filter(i=>i.rarity===rarity);
     if(cand.length){const pick=cand[ri(0,cand.length-1)];groundItems.push(new GI(x,y,{type:'item',id:pick.id},rarity,false))}
-  }else{ // 靈魂碎片
+  }else{
     const amt=rarity==='legendary'?5:rarity==='epic'?3:rarity==='rare'?2:1;
     groundItems.push(new GI(x,y,{type:'soul',amt},rarity,false))
   }
@@ -545,25 +571,51 @@ let pt=[],DN=[];
 class PT{
   constructor(x,y,vx,vy,clr,life,sz){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.clr=clr;this.life=life;this.max=life;this.sz=sz||r(2,4)}
   update(dt){this.x+=this.vx*dt;this.y+=this.vy*dt;this.vx*=.96;this.vy*=.96;this.vy+=100*dt;this.life-=dt}
-  draw(ctx){const a=this.life/this.max;ctx.globalAlpha=a;ctx.fillStyle=this.clr;ctx.shadowBlur=0;ctx.beginPath();ctx.arc(this.x,this.y,this.sz*(.3+.7*a),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+  draw(CX){const a=this.life/this.max;CX.globalAlpha=a;CX.fillStyle=this.clr;CX.shadowBlur=0;CX.beginPath();CX.arc(this.x,this.y,this.sz*(.3+.7*a),0,Math.PI*2);CX.fill();CX.globalAlpha=1}
 }
 function lt(hex,a){let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgb(${Math.min(255,r+a)},${Math.min(255,g+a)},${Math.min(255,b+a)})`}
 
 // ═══ 波次管理 ═══
-const WM={timer:0,spawned:0,maxSpawn:0,
-reset(){this.timer=0;this.spawned=0;this.maxSpawn=0},
-start(n){G.wave=n;this.maxSpawn=5+n*3;this.spawned=0;this.timer=0},
+const WM={timer:0,spawned:0,maxSpawn:0,eliteSpawned:false,bossSpawned:false,
+reset(){this.timer=0;this.spawned=0;this.maxSpawn=0;this.eliteSpawned=false;this.bossSpawned=false},
+start(n){
+  G.wave=n;
+  G.waveInStage=((n-1)%STAGE_WAVES)+1;
+  G.stage=Math.floor((n-1)/STAGE_WAVES)+1;
+  this.maxSpawn=5+n*3;
+  this.spawned=0;this.timer=0;this.eliteSpawned=false;this.bossSpawned=false;
+},
 update(dt){
   if(G.state!=='playing')return;
   if(this.spawned>=this.maxSpawn&&enemies.length===0){
-    // 每3波出現建築
-    if(G.wave%3===0&&G.wave>0)G.state='building';
-    else G.state='waveComplete';
+    // 關卡完成(第5波) → 休息
+    if(G.waveInStage===STAGE_WAVES){
+      G.state='rest';
+      DN.push({x:GW/2,y:GH*0.3,txt:`🎯 第 ${G.stage} 關卡完成！`,life:2.5,max:2.5,big:true,color:'#fa4'});
+    }else{
+      // 隨機建築 (不再是固定每3波)
+      let buildChance=0.2+G.wavesSinceBuilding*0.08;
+      if(Math.random()<buildChance){G.state='building';G.wavesSinceBuilding=0}
+      else{G.state='waveComplete';G.wavesSinceBuilding++}
+    }
     return;
   }
-  if(this.spawned<this.maxSpawn&&enemies.length<30){
+  if(this.spawned<this.maxSpawn&&enemies.length<40){
     this.timer-=dt;
-    if(this.timer<=0){enemies.push(new EM(G.wave));this.spawned++;this.timer=Math.max(.25,1.2-G.wave*.03)}
+    if(this.timer<=0){
+      // Boss關卡 (每3個關卡 = wave 15,30,45...)
+      const isBossWave=G.wave%15===0;
+      const isEliteWave=G.waveInStage===STAGE_WAVES&&!isBossWave;
+      // 只有在關卡最後一波才產Boss/菁英
+      if(isBossWave&&!this.bossSpawned&&this.spawned>=this.maxSpawn-1){
+        enemies.push(new EM(G.wave,'b'));this.bossSpawned=true;
+      }else if(isEliteWave&&!this.eliteSpawned&&this.spawned>=this.maxSpawn-2){
+        enemies.push(new EM(G.wave,'e'));this.eliteSpawned=true;
+      }else{
+        enemies.push(new EM(G.wave));
+      }
+      this.spawned++;this.timer=Math.max(.25,1.2-G.wave*.03);
+    }
   }
 }};
 
@@ -577,16 +629,15 @@ function getRandomBuilding(){
 
 // ═══ 流程 ═══
 function startGame(){
-  G.state='playing';G.wave=0;G.score=0;G.gold=PROG.startGoldBonus*50;
+  G.state='playing';G.wave=0;G.stage=0;G.waveInStage=0;G.score=0;G.gold=PROG.startGoldBonus*50;
   G.totalGold=0;G.kills=0;G.combo=0;G.comboTimer=0;G.screenShake=0;G.slowMo=0;
   G.buffs={crit:0,atk:0,drop:0,gold:0,def:0,aspd:0};
   G.tempItemSlots=0;G.tempSkillSlots=0;
+  G.wavesSinceBuilding=0;
   CFG.playerSpeed=280;CFG.swordLen=130;CFG.swordDmg=25;CFG.swordCD=.15;CFG.centerHP=200;CFG.goldMult=1;
   INV.reset();
-  // 繼承
   for(const eq of G.inheritedEquips){if(eq){INV.equip(eq.type,{...eq})}}
   for(const sk of G.inheritedSkills){if(sk){INV.addSkill(sk);if(INV.equippedSkills.length<INV.skillSlotMax)INV.equippedSkills.push(sk.id)}}
-  // 計算最大格
   INV.itemSlotMax=PROG.permItemSlots+G.tempItemSlots;
   INV.skillSlotMax=PROG.permSkillSlots+G.tempSkillSlots;
   PL.reset();CS.reset();
@@ -599,24 +650,21 @@ function nextWave(){
   G.state='playing';WM.start(G.wave+1);
   const bonus=20+G.wave*5;G.gold+=bonus;
   DN.push({x:GW/2,y:GH*0.5,txt:`波次獎勵 +${bonus}💰`,life:1.5,max:1.5,isGold:true});
-  // 重置波次buff
   G.buffs={crit:0,atk:0,drop:0,gold:0,def:0,aspd:0};
 }
 
 function gameOver(){
   G.state='gameOver';G.inheritedEquips=[];G.inheritedSkills=[];
-  // 計算繼承
   for(let i=0;i<PROG.inheritEquip;i++){const eq=INV.getEqList();if(eq.length){const pick=eq[ri(0,eq.length-1)];if(pick)G.inheritedEquips.push({...pick})}}
   for(let i=0;i<PROG.inheritSkill;i++){if(INV.skills.length){const pick=INV.skills[ri(0,INV.skills.length-1)];if(pick&&!G.inheritedSkills.find(s=>s.id===pick.id))G.inheritedSkills.push({...pick})}}
-  // 靈魂碎片獎勵
-  const soulReward=Math.floor(G.wave/2)+Math.floor(G.kills/20);
+  const soulReward=Math.floor(G.wave/2)+Math.floor(G.kills/20)+Math.floor(G.stage);
   PROG.soulFragments+=soulReward;PROG.totalRuns++;
   if(G.wave>PROG.bestWave)PROG.bestWave=G.wave;
   saveProg();
   DN.push({x:GW/2,y:GH*0.5-20,txt:`💎 靈魂碎片 +${soulReward}`,life:3,max:3,big:true,color:'#b4f'});
 }
 
-// ═══ 繪圖輔助 ═══ 通用面板
+// ═══ 繪圖輔助 ═══
 function drawPanel(px,py,pw,ph,title){
   ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,0,GW,GH);
   ctx.fillStyle='rgba(16,16,35,0.95)';ctx.shadowColor='rgba(100,60,200,0.3)';ctx.shadowBlur=30;
@@ -630,30 +678,66 @@ function drawBtn(x,y,w,h,text,color){
   ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x+w/2,y+h/2);
 }
 
+// ═══ 休息站 ═══
+let restChoices=[];
+function drawRest(){
+  const pw=440,ph=440,px=(GW-pw)/2,py=(GH-ph)/2;
+  drawPanel(px,py,pw,ph,`🎯 第 ${G.stage} 關卡休息站`);
+  ctx.fillStyle='#aaa';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`已通過 ${G.stage*STAGE_WAVES} 波  當前金幣: ${G.gold}💰`,GW/2,py+58);
+  ctx.fillStyle='#888';ctx.font='13px sans-serif';
+  ctx.fillText('選擇一個休息獎勵:',GW/2,py+80);
+
+  // 生成選項
+  if(restChoices.length===0){
+    const choices=[
+      {id:'heal',name:'❤️ 恢復 HP',desc:`恢復守護劍 50% HP (${Math.floor(CS.maxHP*0.5)})`,icon:'❤️'},
+      {id:'gold',name:'💰 金幣獎勵',desc:`獲得 ${30+G.stage*15} 金幣`,icon:'💰'},
+      {id:'buff_atk',name:'⚔️ 攻擊提升',desc:'全關卡 +30% 攻擊力',icon:'⚔️'},
+      {id:'buff_drop',name:'🍀 掉寶提升',desc:'全關卡 +50% 掉寶率',icon:'🍀'},
+    ];
+    // 隨機選3個
+    const shuffled=[...choices].sort(()=>Math.random()-0.5);
+    restChoices=shuffled.slice(0,3);
+  }
+
+  const startY=py+100,itemH=64;
+  for(let i=0;i<restChoices.length;i++){
+    const rc2=restChoices[i],y=startY+i*itemH;
+    ctx.fillStyle='rgba(60,80,120,0.3)';ctx.strokeStyle='rgba(100,60,200,0.3)';ctx.lineWidth=1;
+    ctx.roundRect(px+20,y,pw-40,itemH-4,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ddd';ctx.font='bold 15px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(`${rc2.icon||'?'} ${rc2.name}`,px+32,y+itemH/2-8);
+    ctx.fillStyle='#aaa';ctx.font='12px sans-serif';
+    ctx.fillText(rc2.desc,px+32,y+itemH/2+12);
+  }
+  drawBtn(px+pw/2-60,py+ph-50,120,36,'跳過 →','#555');
+}
+
+function applyRestChoice(id){
+  if(id==='heal'){const amt=Math.floor(CS.maxHP*0.5);CS.hp=Math.min(CS.maxHP,CS.hp+amt);DN.push({x:GW/2,y:GH*0.4,txt:`❤️ +${amt} HP`,life:1.5,max:1.5,big:true,color:'#4f8'})}
+  else if(id==='gold'){const amt=30+G.stage*15;G.gold+=amt;DN.push({x:GW/2,y:GH*0.4,txt:`💰 +${amt}`,life:1.5,max:1.5,big:true,isGold:true})}
+  else if(id==='buff_atk'){G.buffs.atk=(G.buffs.atk||0)+30;}
+  else if(id==='buff_drop'){G.buffs.drop=(G.buffs.drop||0)+50;}
+  restChoices=[];
+}
+
 // ═══ 建築UI ═══
 function drawBuilding(){
   if(!currentBuilding)return;
   const pw=420,ph=460,px=(GW-pw)/2,py=(GH-ph)/2;
   const names={shop:'🏪 商店',blacksmith:'🔨 鐵匠鋪',temple:'🏛️ 神殿',inn:'🏨 旅館'};
   drawPanel(px,py,pw,ph,names[currentBuilding]||'建築');
-
-  if(currentBuilding==='shop'){
-    drawShop(px,py,pw);
-  }else if(currentBuilding==='blacksmith'){
-    drawBlacksmith(px,py,pw);
-  }else if(currentBuilding==='temple'){
-    drawTemple(px,py,pw);
-  }else if(currentBuilding==='inn'){
-    drawInn(px,py,pw);
-  }
-  // 跳過按鈕
-  drawBtn(px+pw/2-60,py+ph-50,120,36,'跳過 →','#555');
+  if(currentBuilding==='shop')drawShop(px,py,pw);
+  else if(currentBuilding==='blacksmith')drawBlacksmith(px,py,pw);
+  else if(currentBuilding==='temple')drawTemple(px,py,pw);
+  else if(currentBuilding==='inn')drawInn(px,py,pw);
+  drawBtn(px+pw/2-60,py+ph-50,120,36,'離開 →','#555');
 }
 
 let shopItems=[];
 function drawShop(px,py,pw){
   if(!shopItems.length){
-    // 隨機生成商品
     const count=3+ri(0,2);
     for(let i=0;i<count;i++){
       const rv=Math.random();
@@ -749,7 +833,10 @@ function drawHUD(){
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.5)';ctx.roundRect(10,10,GW-20,48,10);ctx.fill();
   ctx.textBaseline='middle';ctx.font='bold 17px sans-serif';
-  ctx.fillStyle='#8af';ctx.textAlign='left';ctx.fillText(`WAVE ${G.wave}`,25,35);
+  ctx.fillStyle='#8af';ctx.textAlign='left';
+  // 顯示關卡資訊
+  const stageLabel=G.waveInStage===STAGE_WAVES?'🏁':`📖`;
+  ctx.fillText(`${stageLabel} STAGE ${G.stage} WAVE ${G.waveInStage}`,25,35);
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(`🏆 ${G.score}`,GW*0.3,35);
   ctx.fillStyle='#fd4';ctx.fillText(`💰 ${G.gold}`,GW*0.48,35);
   ctx.fillStyle='#aaa';ctx.fillText(`💀 ${G.kills}`,GW*0.63,35);
@@ -761,6 +848,12 @@ function drawHUD(){
   const p=Math.min(1,WM.spawned/Math.max(1,WM.maxSpawn)),bx=GW/2-100,by=62;
   ctx.fillStyle='rgba(255,255,255,0.1)';ctx.roundRect(bx,by,200,5,2.5);ctx.fill();
   ctx.fillStyle=`hsl(${p*200+100},100%,60%)`;ctx.roundRect(bx,by,200*p,5,2.5);ctx.fill();
+  // 小地圖提示: Boss/菁英圖示
+  if(G.waveInStage===STAGE_WAVES){
+    const isBoss=G.wave%15===0;
+    ctx.fillStyle='#fa4';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(isBoss?'👑 BOSS 關卡！':'⭐ 菁英來襲！',GW/2,70);
+  }
   // 技能指示
   for(let i=0;i<INV.equippedSkills.length;i++){
     const sid=INV.equippedSkills[i],sk=SKILLS.find(s=>s.id===sid);if(!sk)continue;
@@ -772,7 +865,6 @@ function drawHUD(){
     ctx.fillText(icons[sid]||'?',x+12,y+12);ctx.globalAlpha=1;
     if(ratio>0){ctx.fillStyle=`rgba(0,0,0,${.3+ratio*.4})`;ctx.roundRect(x,y,24,24*ratio,4);ctx.fill()}
   }
-  // BUFF指示
   let bi=0;
   for(const[k,v]of Object.entries(G.buffs)){
     if(v>0){
@@ -787,8 +879,8 @@ function drawHUD(){
 let upgradeTab='stats';
 function drawWaveComplete(){
   const pw=420,ph=520,px=(GW-pw)/2,py=(GH-ph)/2;
-  drawPanel(px,py,pw,ph,`WAVE ${G.wave} 完成！`);
-  ctx.fillStyle='#aaa';ctx.font='14px sans-serif';ctx.fillText(`擊殺 ${WM.spawned}隻 · 金幣 ${G.gold}`,GW/2,py+56);
+  drawPanel(px,py,pw,ph,`WAVE ${G.waveInStage} 完成！`);
+  ctx.fillStyle='#aaa';ctx.font='14px sans-serif';ctx.fillText(`擊殺 ${WM.spawned}隻 · 金幣 ${G.gold} · 關卡 ${G.stage}`,GW/2,py+56);
   const tabs=[{id:'stats',label:'⚡強化'},{id:'bag',label:'📦道具'},{id:'weapons',label:'🗡️裝備'},{id:'skills',label:'📜技能'}];
   const tabY=py+72;
   tabs.forEach((t,i)=>{const tx=px+12+i*100,tw=96,th=26;ctx.fillStyle=upgradeTab===t.id?'rgba(74,122,212,0.5)':'rgba(255,255,255,0.08)';ctx.roundRect(tx,tabY,tw,th,6);ctx.fill();ctx.fillStyle=upgradeTab===t.id?'#fff':'#888';ctx.font=upgradeTab===t.id?'bold 12px sans-serif':'11px sans-serif';ctx.textAlign='center';ctx.fillText(t.label,tx+tw/2,tabY+th/2+1)});
@@ -796,7 +888,7 @@ function drawWaveComplete(){
   else if(upgradeTab==='bag')drawBagTab(px,py,pw);
   else if(upgradeTab==='weapons')drawEquipTab(px,py,pw);
   else if(upgradeTab==='skills')drawSkillTab(px,py,pw);
-  drawBtn(px+pw/2-80,py+ph-50,160,38,'▶ 繼續下一波');
+  drawBtn(px+pw/2-80,py+ph-50,160,38,'▶ 繼續');
 }
 
 function drawStatsTab(px,py,pw){
@@ -872,45 +964,49 @@ function drawGameOver(){
   ctx.fillStyle='#f44';ctx.font='bold 48px sans-serif';ctx.shadowColor='#f44';ctx.shadowBlur=30;
   ctx.fillText('💀 守護劍斷了',GW/2,GH*0.2);ctx.shadowBlur=0;
   ctx.fillStyle='#aaa';ctx.font='18px sans-serif';
-  ctx.fillText(`存活至 WAVE ${G.wave}  分數: ${G.score}`,GW/2,GH*0.3);
+  ctx.fillText(`存活至 WAVE ${G.wave} (第${G.stage}關)  分數: ${G.score}`,GW/2,GH*0.3);
   ctx.fillText(`總擊殺: ${G.kills}  金幣: ${G.totalGold}`,GW/2,GH*0.35);
-  // 繼承資訊
   if(G.inheritedEquips.length||G.inheritedSkills.length){
     ctx.fillStyle='#b4f';ctx.font='15px sans-serif';
     ctx.fillText(`繼承: ${G.inheritedEquips.length}件裝備 ${G.inheritedSkills.length}個技能`,GW/2,GH*0.42);
   }
   ctx.fillStyle='#8af';ctx.font='14px sans-serif';
-  ctx.fillText(`總遊玩: ${PROG.totalRuns}次  最佳波次: ${PROG.bestWave}`,GW/2,GH*0.47);
+  ctx.fillText(`總遊玩: ${PROG.totalRuns}次  最佳波次: ${PROG.bestWave}`,GW/2,GH*0.48);
   ctx.fillStyle='#b4f';ctx.font='bold 16px sans-serif';
-  ctx.fillText(`💎 靈魂碎片: ${PROG.soulFragments}`,GW/2,GH*0.52);
-  // 按鈕
-  drawBtn(GW/2-130,GH*0.58,120,45,'🔄 再來一次');
-  drawBtn(GW/2+10,GH*0.58,130,45,'⬆️ 永久強化','#8a4ad4');
+  ctx.fillText(`💎 靈魂碎片: ${PROG.soulFragments}`,GW/2,GH*0.54);
+  // 存檔提示
+  ctx.fillStyle='#666';ctx.font='11px sans-serif';
+  ctx.fillText('📁 自動存檔中 (localStorage)',GW/2,GH*0.59);
+  drawBtn(GW/2-130,GH*0.64,120,45,'🔄 再來一次');
+  drawBtn(GW/2+10,GH*0.64,130,45,'⬆️ 永久強化','#8a4ad4');
   ctx.restore();
 }
 
 // ═══ 永久強化畫面 ═══
 function drawPermUpgrade(){
   ctx.save();ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillRect(0,0,GW,GH);
-  const pw=460,ph=480,px=(GW-pw)/2,py=(GH-ph)/2;
+  const pw=480,ph=500,px=(GW-pw)/2,py=(GH-ph)/2;
   ctx.fillStyle='rgba(20,20,45,0.95)';ctx.shadowColor='rgba(180,80,220,0.3)';ctx.shadowBlur=30;
   ctx.roundRect(px,py,pw,ph,16);ctx.fill();ctx.shadowBlur=0;
   ctx.fillStyle='#b4f';ctx.font='bold 22px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(`⬆️ 永久強化  💎 ${PROG.soulFragments}`,GW/2,py+30);
-  ctx.fillStyle='#888';ctx.font='12px sans-serif';ctx.fillText('靈魂碎片在每次死亡時獲得',GW/2,py+50);
-  const startY=py+65,itemH=44;
+  ctx.fillText(`⬆️ 永久強化  💎 ${PROG.soulFragments}`,GW/2,py+32);
+  ctx.fillStyle='#888';ctx.font='12px sans-serif';ctx.fillText('靈魂碎片在每次死亡時獲得, 總遊玩次數自動存檔',GW/2,py+54);
+  const startY=py+70,itemH=46;
   for(let i=0;i<PERM_UPGRADES.length;i++){
     const pu=PERM_UPGRADES[i],lv=pu.get(),cost=pu.cost(lv),can=PROG.soulFragments>=cost,maxed=lv>=pu.max,y=startY+i*itemH;
     ctx.fillStyle=maxed?'rgba(60,60,80,0.3)':(can?'rgba(80,60,120,0.3)':'rgba(60,40,40,0.3)');
     ctx.roundRect(px+15,y,pw-30,itemH-4,6);ctx.fill();
     ctx.fillStyle=maxed?'#666':'#ddd';ctx.font='13px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
     ctx.fillText(`${pu.name} Lv.${lv}`,px+25,y+itemH/2);
-    ctx.fillStyle='#888';ctx.font='10px sans-serif';ctx.fillText(pu.desc,px+25,y+itemH/2-14);
+    ctx.fillStyle='#888';ctx.font='10px sans-serif';ctx.fillText(pu.desc,px+25,y+itemH/2-16);
     ctx.textAlign='right';
     if(maxed){ctx.fillStyle='#666';ctx.fillText('MAX',px+pw-25,y+itemH/2)}
     else{ctx.fillStyle=can?'#b4f':'#844';ctx.fillText(`💎 ${cost}`,px+pw-25,y+itemH/2)}
   }
-  drawBtn(px+pw/2-50,py+ph-45,100,34,'← 返回','#555');
+  // 備註
+  ctx.fillStyle='#666';ctx.font='11px sans-serif';ctx.textAlign='center';
+  ctx.fillText(`📁 資料自動儲存於瀏覽器 (localStorage) · 清除瀏覽資料會遺失`,GW/2,py+ph-18);
+  drawBtn(px+pw/2-50,py+ph-48,100,34,'← 返回','#555');
 }
 
 // ═══ 選單 ═══
@@ -920,18 +1016,27 @@ function drawMenu(){
   ctx.fillStyle=bg;ctx.fillRect(0,0,GW,GH);
   ctx.strokeStyle='rgba(60,60,90,0.12)';ctx.lineWidth=1;
   for(let x=0;x<GW;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke()}
-  for(let y=0;y<GH;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(GW,y);ctx.stroke()}
+  for(let y=0;y<GH;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(GH,y);ctx.stroke()}
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.shadowColor='rgba(100,60,200,0.5)';ctx.shadowBlur=40;
   ctx.fillStyle='#8af';ctx.font='bold 52px sans-serif';ctx.fillText('⚔ 巨劍守護',GW/2,GH*0.22);
-  ctx.shadowBlur=0;ctx.fillStyle='#aaa';ctx.font='16px sans-serif';ctx.fillText('Guardian Blade v2.0',GW/2,GH*0.29);
-  ctx.fillStyle='#888';ctx.font='13px sans-serif';ctx.fillText('靈感來自「赤之劍」· 裝備 · 技能 · 建築 · 周目繼承',GW/2,GH*0.34);
-  const tips=['🖱️ 移動=滑鼠/觸控  攻擊=點擊/觸控','🗡️ 擊殺敵人取得武器/裝備/技能/道具','🏪 每3波出現隨機建築(商店/鐵匠/神殿/旅館)','💀 死亡繼承裝備及技能,累積靈魂碎片永久強化'];
+  ctx.shadowBlur=0;ctx.fillStyle='#aaa';ctx.font='16px sans-serif';ctx.fillText('Guardian Blade v2.1',GW/2,GH*0.29);
+  ctx.fillStyle='#888';ctx.font='13px sans-serif';ctx.fillText('裝備 · 技能 · 建築 · 關卡 · 永久強化',GW/2,GH*0.34);
+  const tips=['🖱️ 移動=滑鼠/觸控  攻擊=點擊/觸控','🗡️ 擊殺敵人取得武器/裝備/技能/道具','🏪 隨機出現商店/鐵匠/神殿/旅館','👹 每5波一個關卡,菁英/Boss出現,關卡間可休息'];
   tips.forEach((t,i)=>{ctx.fillStyle='#777';ctx.font='13px sans-serif';ctx.fillText(t,GW/2,GH*0.42+i*22)});
   ctx.fillStyle='#888';ctx.font='12px sans-serif';
   ctx.fillText(`總遊玩: ${PROG.totalRuns}次  最佳波次: ${PROG.bestWave}  💎 ${PROG.soulFragments}`,GW/2,GH*0.56);
-  drawBtn(GW/2-100,GH*0.63,200,50,'▶ 開始遊戲');
-  drawBtn(GW/2-100,GH*0.72,200,44,'⬆️ 永久強化','#8a4ad4');
+  // 存檔狀態
+  try{
+    const hasSave=localStorage.getItem('gb_prog')!==null;
+    ctx.fillStyle=hasSave?'#4a4':'#666';ctx.font='10px sans-serif';
+    ctx.fillText(hasSave?'📁 存檔正常':'📁 首次遊玩(將自動存檔)',GW/2,GH*0.605);
+  }catch(e){
+    ctx.fillStyle='#844';ctx.font='10px sans-serif';
+    ctx.fillText('⚠️ 無法存取 localStorage',GW/2,GH*0.605);
+  }
+  drawBtn(GW/2-100,GH*0.66,200,50,'▶ 開始遊戲');
+  drawBtn(GW/2-100,GH*0.75,200,44,'⬆️ 永久強化','#8a4ad4');
 }
 
 // ═══ 更新 ═══
@@ -974,7 +1079,6 @@ function draw(){
   const hl=C.createRadialGradient(CS.x,CS.y,10,CS.x,CS.y,200);
   hl.addColorStop(0,'rgba(100,60,180,0.08)');hl.addColorStop(1,'rgba(100,60,180,0)');
   C.fillStyle=hl;C.beginPath();C.arc(CS.x,CS.y,200,0,Math.PI*2);C.fill();
-  // 地面物品
   for(const gi of groundItems)gi.draw(C);
   CS.draw(C);
   for(const e of enemies)e.draw(C);
@@ -991,9 +1095,10 @@ function draw(){
     C.shadowColor=n.color?n.color+'66':(n.isGold?'rgba(255,200,0,0.5)':'rgba(255,255,255,0.3)');
     C.shadowBlur=n.big?10:4;C.fillText(n.txt,n.x,n.y);C.restore();
   }
-  if(G.state!=='gameOver'&&G.state!=='menu')drawHUD();
+  if(G.state!=='gameOver'&&G.state!=='menu'&&G.state!=='rest')drawHUD();
   if(G.state==='waveComplete')drawWaveComplete();
   if(G.state==='building')drawBuilding();
+  if(G.state==='rest')drawRest();
   if(G.state==='gameOver')drawGameOver();
   if(G.state==='permUpgrade')drawPermUpgrade();
   C.restore();
@@ -1006,19 +1111,31 @@ $.addEventListener('touchend',e=>{e.preventDefault();if(e.changedTouches.length)
 
 function handleClick(cx,cy){
   if(G.state==='menu'){
-    if(cx>GW/2-100&&cx<GW/2+100&&cy>GH*0.63&&cy<GH*0.63+50)startGame();
-    if(cx>GW/2-100&&cx<GW/2+100&&cy>GH*0.72&&cy<GH*0.72+44)G.state='permUpgrade';
+    if(cx>GW/2-100&&cx<GW/2+100&&cy>GH*0.66&&cy<GH*0.66+50)startGame();
+    if(cx>GW/2-100&&cx<GW/2+100&&cy>GH*0.75&&cy<GH*0.75+44)G.state='permUpgrade';
     return;
   }
   if(G.state==='permUpgrade'){
-    const pw=460,ph=480,px=(GW-pw)/2,py=(GH-ph)/2,startY=py+65,itemH=44;
+    const pw=480,ph=500,px=(GW-pw)/2,py=(GH-ph)/2,startY=py+70,itemH=46;
     for(let i=0;i<PERM_UPGRADES.length;i++){
       const pu=PERM_UPGRADES[i],lv=pu.get(),cost=pu.cost(lv),can=PROG.soulFragments>=cost,maxed=lv>=pu.max,y=startY+i*itemH;
       if(!maxed&&can&&cx>px+15&&cx<px+pw-15&&cy>y&&cy<y+itemH-4){
         PROG.soulFragments-=cost;pu.set(lv+1);saveProg();return;
       }
     }
-    if(cx>px+pw/2-50&&cx<px+pw/2+50&&cy>py+ph-45&&cy<py+ph-11){G.state='menu';return}
+    if(cx>px+pw/2-50&&cx<px+pw/2+50&&cy>py+ph-48&&cy<py+ph-14){G.state='menu';return}
+    return;
+  }
+  // 休息站
+  if(G.state==='rest'){
+    const pw=440,ph=440,px=(GW-pw)/2,py=(GH-ph)/2,startY=py+100,itemH=64;
+    for(let i=0;i<restChoices.length;i++){
+      const y=startY+i*itemH;
+      if(cx>px+20&&cx<px+pw-20&&cy>y&&cy<y+itemH-4){
+        applyRestChoice(restChoices[i].id);restChoices=[];nextWave();return;
+      }
+    }
+    if(cx>px+pw/2-60&&cx<px+pw/2+60&&cy>py+ph-50&&cy<py+ph-14){restChoices=[];nextWave();return}
     return;
   }
   if(G.state==='waveComplete'){
@@ -1033,7 +1150,7 @@ function handleClick(cx,cy){
       const startY=py+115,itemH=42;
       for(let i=0;i<INV.items.length;i++){const y=startY+i*itemH;if(cx>px+15&&cx<px+pw-15&&cy>y&&cy<y+itemH-4){const it=INV.useItem(i);if(it){if(it.type==='consumable'){CS.hp=Math.min(CS.maxHP,CS.hp+(it.heal||30));DN.push({x:CS.x,y:CS.y-30,txt:`+${it.heal||30}❤️`,life:1,max:1,color:'#4f8'})}else if(it.type==='buff'){const bufMap={crit:'crit',atk:'atk',drop:'drop',gold:'gold',def:'def',aspd:'aspd'};const bk=bufMap[it.buff];if(bk)G.buffs[bk]=(G.buffs[bk]||0)+it.val;DN.push({x:GW/2,y:GH*0.4,txt:`${it.name} 啟動!`,life:1.5,max:1.5,big:true})}}return}}
     }else if(upgradeTab==='weapons'){
-      // 只顯示資訊，不可操作
+      // info only
     }else if(upgradeTab==='skills'){
       const startY=py+115,itemH=42;
       for(let i=0;i<INV.skills.length;i++){const s=INV.skills[i],y=startY+i*itemH;if(cx>px+15&&cx<px+pw-15&&cy>y&&cy<y+itemH-4){INV.toggleSkill(s.id);return}}
@@ -1043,7 +1160,6 @@ function handleClick(cx,cy){
   }
   if(G.state==='building'){
     const pw=420,ph=460,px=(GW-pw)/2,py=(GH-ph)/2;
-    // 跳過
     if(cx>px+pw/2-60&&cx<px+pw/2+60&&cy>py+ph-50&&cy<py+ph-14){currentBuilding=null;shopItems=[];templeSelect=[];buildingProcessed=false;nextWave();return}
     if(currentBuilding==='shop'){
       const startY=py+60,itemH=44;
@@ -1066,12 +1182,11 @@ function handleClick(cx,cy){
       const startY=py+85,itemH=42;
       for(let i=0;i<eqSkills.length;i++){const sk=eqSkills[i],y=startY+i*itemH;if(cx>px+15&&cx<px+pw-15&&cy>y&&cy<y+itemH-4){
         if(templeSelect.includes(sk.id)){
-          if(templeSelect.length===2){// 融合!
+          if(templeSelect.length===2){
             const rarities=templeSelect.map(id=>{const s=SKILLS.find(x=>x.id===id);return s?R_ORD.indexOf(s.rarity):0});
             const avgRarity=Math.min(R_ORD.length-1,Math.ceil((rarities[0]+rarities[1])/2)+1);
             const cand=SKILLS.filter(s=>R_ORD.indexOf(s.rarity)<=avgRarity&&!INV.skills.find(x=>x.id===s.id)&&!templeSelect.includes(s.id));
             if(cand.length){const result=cand[ri(0,cand.length-1)];INV.addSkill(result);if(!INV.equippedSkills.includes(result.id)&&INV.equippedSkills.length<INV.skillSlotMax)INV.equippedSkills.push(result.id);DN.push({x:GW/2,y:GH*0.4,txt:`✨ ${result.name} 融合成功!`,life:1.5,max:1.5,big:true})}
-            // 消耗原技能
             for(const sid of templeSelect){const idx=INV.equippedSkills.indexOf(sid);if(idx>=0)INV.equippedSkills.splice(idx,1);const idx2=INV.skills.findIndex(s=>s.id===sid);if(idx2>=0)INV.skills.splice(idx2,1)}
             templeSelect=[];return;
           }
@@ -1088,13 +1203,13 @@ function handleClick(cx,cy){
     return;
   }
   if(G.state==='gameOver'){
-    if(cx>GW/2-130&&cx<GW/2-10&&cy>GH*0.58&&cy<GH*0.58+45)startGame();
-    if(cx>GW/2+10&&cx<GW/2+140&&cy>GH*0.58&&cy<GH*0.58+45)G.state='permUpgrade';
+    if(cx>GW/2-130&&cx<GW/2-10&&cy>GH*0.64&&cy<GH*0.64+45)startGame();
+    if(cx>GW/2+10&&cx<GW/2+140&&cy>GH*0.64&&cy<GH*0.64+45)G.state='permUpgrade';
     return;
   }
 }
 
-// ═══ 升級定義(移出供全局) ═══
+// ═══ 升級定義 ═══
 const UPGRADES=[
   {id:'damage',name:'⚔️ 攻擊力',desc:'+20%',base:50,mult:1.6,lv:0,max:20,apply:()=>{CFG.swordDmg*=1.2}},
   {id:'range',name:'📏 劍範圍',desc:'+15%',base:40,mult:1.5,lv:0,max:20,apply:()=>{CFG.swordLen*=1.15}},
@@ -1113,12 +1228,11 @@ function loop(t){
   const dt=Math.min((t-last)/1000,.05);last=t;
   update(dt);draw();requestAnimationFrame(loop);
 }
-// roundRect polyfill
 if(!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){if(typeof r==='number')r=[r];const rad=r[0]||0;this.moveTo(x+rad,y);this.arcTo(x+w,y,x+w,y+h,rad);this.arcTo(x+w,y+h,x,y+h,rad);this.arcTo(x,y+h,x,y,rad);this.arcTo(x,y,x+w,y,rad);return this}
 }
 rs();loop(0);
-console.log('⚔ 巨劍守護 v2.0 - 裝備/強化/道具/建築/周目繼承');
+console.log('⚔ 巨劍守護 v2.1 - 裝備/強化/道具/建築/關卡/Boss/休息');
 </script>
 </body>
 </html>
