@@ -1090,43 +1090,43 @@ function drawBackground(){
   grad.addColorStop(0,t.bg);grad.addColorStop(0.5,t.bg);grad.addColorStop(1,t.bg);
   ctx.fillStyle=grad;ctx.fillRect(0,0,GW,GH);
 
-  // Floor
-  fillRect(0,GH-40,GW,40,t.floor);
-  fillRect(0,GH-40,GW,2,t.line);
+  // Floor (respects play zone)
+  fillRect(0,PLAY_H-45,GW,45,t.floor);
+  fillRect(0,PLAY_H-45,GW,2,t.line);
 
   // Pillars left
   for(let i=0;i<2;i++){
     const px=10+i*50;
-    fillRect(px,30,30,GH-70,t.accent);
+    fillRect(px,30,30,PLAY_H-80,t.accent);
     fillRect(px-2,30,34,4,'rgba(60,65,90,0.2)');
-    fillRect(px-2,GH-74,34,4,'rgba(60,65,90,0.2)');
+    fillRect(px-2,PLAY_H-79,34,4,'rgba(60,65,90,0.2)');
   }
 
   // Gate pillars right
   for(let i=0;i<2;i++){
     const px=GW-100+i*60;
-    fillRect(px,20,35,GH-60,t.accent);
+    fillRect(px,20,35,PLAY_H-70,t.accent);
     fillRect(px-2,20,39,4,'rgba(60,65,90,0.2)');
-    fillRect(px-2,GH-64,39,4,'rgba(60,65,90,0.2)');
+    fillRect(px-2,PLAY_H-69,39,4,'rgba(60,65,90,0.2)');
   }
 
   // Dark arch
   ctx.strokeStyle='rgba(60,50,80,0.5)';ctx.lineWidth=6;
-  ctx.beginPath();ctx.arc(GW-25,GH/2,100,-Math.PI/2-0.5,Math.PI/2+0.5);ctx.stroke();
-  fillRect(GW-30,GH/2-110,20,220,'rgba(20,15,30,0.3)');
+  ctx.beginPath();ctx.arc(GW-25,PLAY_H/2,100,-Math.PI/2-0.5,Math.PI/2+0.5);ctx.stroke();
+  fillRect(GW-30,PLAY_H/2-110,20,220,'rgba(20,15,30,0.3)');
 
   // 熔岩地形額外效果
   if(t.id==='lava'){
     for(let i=0;i<3;i++){
       const lx = 100 + i*280 + Math.sin(G.totalTime*0.02+i)*20;
-      fillRect(lx,GH-38,60,36,'rgba(255,100,20,0.08)');
+      fillRect(lx,PLAY_H-43,60,36,'rgba(255,100,20,0.08)');
     }
   }
   // 冰封地形額外效果
   if(t.id==='frost'){
     for(let i=0;i<5;i++){
       const fx = 50 + i*180;
-      fillRect(fx,GH-42,4,40,'rgba(100,180,255,0.06)');
+      fillRect(fx,PLAY_H-47,4,40,'rgba(100,180,255,0.06)');
     }
   }
 }
@@ -1175,27 +1175,68 @@ function drawGuardianSword(){
 function drawPlayer(){
   const p=G.player,px=p.x,py=p.y,facing=p.facing;
 
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.3)';
-  ctx.beginPath();ctx.ellipse(px,py+22,18,5,0,0,Math.PI*2);ctx.fill();
+  // 角色光暈（根據 HP 比例）
+  const hpGlow = p.hp/p.maxHp;
+  const glowColor = hpGlow>0.5 ? `rgba(80,160,255,${0.08+hpGlow*0.1})` : `rgba(255,80,80,${0.1+(1-hpGlow)*0.15})`;
+  setGlow(glowColor,30);
+  ctx.beginPath();ctx.arc(px,py,35,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0)';ctx.fill();
+  noGlow();
 
-  // Cape
-  ctx.fillStyle='#1a1a3a';
+  // Shadow (橢圓柔和)
+  const gradShadow = ctx.createRadialGradient(px,py+22,0,px,py+22,20);
+  gradShadow.addColorStop(0,'rgba(0,0,0,0.35)');gradShadow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gradShadow;ctx.beginPath();ctx.ellipse(px,py+22,20,6,0,0,Math.PI*2);ctx.fill();
+
+  // 背部光翼（當 berserk 或 combo 高時）
+  if(G.berserkActive || G.combo>5){
+    const wingAlpha = Math.min(0.4, (G.berserkActive?0.3:0) + G.combo*0.02);
+    ctx.fillStyle=`rgba(255,200,100,${wingAlpha})`;
+    ctx.beginPath();ctx.moveTo(px-10*facing,py-15);
+    ctx.quadraticCurveTo(px-28*facing,py-30,px-18*facing,py-5);
+    ctx.quadraticCurveTo(px-12*facing,py-12,px-10*facing,py-15);ctx.fill();
+    ctx.beginPath();ctx.moveTo(px-12*facing,py-8);
+    ctx.quadraticCurveTo(px-30*facing,py-18,px-20*facing,py+5);
+    ctx.quadraticCurveTo(px-14*facing,py,px-12*facing,py-8);ctx.fill();
+  }
+
+  // 斗篷（漸層）
+  const gradCape = ctx.createLinearGradient(px-8*facing,py-5,px-18*facing,py+25);
+  gradCape.addColorStop(0,'rgba(30,40,80,0.9)');gradCape.addColorStop(1,'rgba(20,20,50,0.6)');
+  ctx.fillStyle=gradCape;
   ctx.beginPath();ctx.moveTo(px-10*facing,py-8);
   ctx.quadraticCurveTo(px-18*facing,py+15,px-8*facing,py+25);
   ctx.quadraticCurveTo(px-3*facing,py+20,px-5*facing,py+8);ctx.fill();
 
-  // Legs
-  fillRect(px-7,py+8,6,14,'#2a2a4a');fillRect(px+1,py+8,6,14,'#2a2a4a');
-  fillRect(px-8,py+20,8,4,'#3a3a5a');fillRect(px,py+20,8,4,'#3a3a5a');
+  // 腿部（漸層）
+  const gradLeg = ctx.createLinearGradient(px-7,py+8,px-1,py+22);
+  gradLeg.addColorStop(0,'#3a3a6a');gradLeg.addColorStop(1,'#1a1a3a');
+  ctx.fillStyle=gradLeg;fillRect(px-7,py+8,6,14,gradLeg);
+  ctx.fillStyle=gradLeg;fillRect(px+1,py+8,6,14,gradLeg);
+  fillRect(px-8,py+20,8,4,'#4a4a6a');fillRect(px,py+20,8,4,'#4a4a6a');
 
-  // Body armor
-  ctx.fillStyle='#2a3a6a';
+  // 胸甲（金屬漸層）
+  const gradArmor = ctx.createLinearGradient(px-13,py-6,px+13,py+16);
+  gradArmor.addColorStop(0,'rgba(60,100,180,0.9)');gradArmor.addColorStop(0.5,'rgba(40,70,140,0.95)');gradArmor.addColorStop(1,'rgba(30,50,100,0.8)');
+  ctx.fillStyle=gradArmor;
   ctx.beginPath();ctx.ellipse(px,py+5,13,11,0,0,Math.PI*2);ctx.fill();
 
-  // Armor highlight
-  ctx.fillStyle='rgba(100,150,255,0.15)';
-  ctx.beginPath();ctx.ellipse(px,py+5,10,8,0,0,Math.PI*2);ctx.fill();
+  // 胸甲高光
+  ctx.fillStyle='rgba(150,200,255,0.2)';
+  ctx.beginPath();ctx.ellipse(px-2*facing,py+3,8,6,0,0,Math.PI*2);ctx.fill();
+
+  // 頭盔
+  ctx.fillStyle='#3a4a7a';
+  ctx.beginPath();ctx.arc(px,py-5,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(150,200,255,0.15)';
+  ctx.beginPath();ctx.arc(px-2*facing,py-7,6,0,Math.PI*2);ctx.fill();
+
+  // 眼睛（發光）
+  setGlow('#66ddff',8);
+  ctx.fillStyle='#66ddff';
+  ctx.beginPath();ctx.arc(px+3*facing,py-6,2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(px+7*facing,py-5,2,0,Math.PI*2);ctx.fill();
+  noGlow();
 
   // Belt
   fillRect(px-12,py+10,24,3,'#4a3a2a');
@@ -1322,78 +1363,115 @@ function drawSword(px,py,facing){
 
 function drawEnemy(e){
   const x=e.x,y=e.y,s=e.size;
+  const pulse = Math.sin(e.anim*3)*2;
 
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.2)';
-  ctx.beginPath();ctx.ellipse(x,y+s*0.8,s*0.7,s*0.2,0,0,Math.PI*2);ctx.fill();
+  // Shadow (soft radial)
+  const gradShad = ctx.createRadialGradient(x,y+s*0.8,0,x,y+s*0.8,s*0.7);
+  gradShad.addColorStop(0,'rgba(0,0,0,0.25)');gradShad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gradShad;ctx.beginPath();ctx.ellipse(x,y+s*0.8,s*0.7,s*0.2,0,0,Math.PI*2);ctx.fill();
 
   // Body glow
-  if(e.isBoss) setGlow(e.color,25);
-  else if(e.isElite) setGlow(e.color,12);
+  if(e.isBoss) setGlow(e.color,30);
+  else if(e.isElite) setGlow(e.color,15);
+  else if(e.burnTimer>0) setGlow('#ff6600',10);
 
-  // Body shape
-  ctx.fillStyle=e.color;
+  // Body shape (radial gradient)
+  const gradBody = ctx.createRadialGradient(x-3,y-3,0,x,y,s);
+  if(e.isBoss){
+    gradBody.addColorStop(0,'rgba(255,150,100,0.9)');gradBody.addColorStop(1,e.color);
+  } else if(e.isElite){
+    gradBody.addColorStop(0,'rgba(255,200,100,0.8)');gradBody.addColorStop(1,e.color);
+  } else if(e.type==='fast'){
+    gradBody.addColorStop(0,'rgba(255,220,100,0.8)');gradBody.addColorStop(1,e.color);
+  } else if(e.type==='heavy'){
+    gradBody.addColorStop(0,'rgba(200,120,255,0.8)');gradBody.addColorStop(1,e.color);
+  } else {
+    gradBody.addColorStop(0,'rgba(255,150,150,0.7)');gradBody.addColorStop(1,e.color);
+  }
+  ctx.fillStyle=gradBody;
   ctx.beginPath();
   if(e.isBoss){
-    ctx.arc(x,y,s,0,Math.PI*2);
-    ctx.arc(x-10,y+5,s*0.5,0,Math.PI*2);
-    ctx.arc(x+10,y+5,s*0.5,0,Math.PI*2);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2-Math.PI/2;ctx.lineTo(x+Math.cos(a)*s*1.2,y+Math.sin(a)*s*1.2);}
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(80,40,60,0.6)';
+    ctx.beginPath();ctx.arc(x-14,y+2,8,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+14,y+2,8,0,Math.PI*2);ctx.fill();
   } else if(e.isElite){
-    ctx.arc(x,y,s,0,Math.PI*2);
+    ctx.arc(x,y+1,s*1.1,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.1)';
+    ctx.beginPath();ctx.arc(x-3,y-3,s*0.5,0,Math.PI*2);ctx.fill();
+  } else if(e.type==='fast'){
+    ctx.ellipse(x,y,s,s*0.6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    ctx.beginPath();ctx.ellipse(x-2,y-2,s*0.5,s*0.3,0,0,Math.PI*2);ctx.fill();
+  } else if(e.type==='heavy'){
+    ctx.arc(x,y+1,s*1.15,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.08)';
+    ctx.beginPath();ctx.arc(x-3,y-3,s*0.6,0,Math.PI*2);ctx.fill();
   } else {
-    ctx.ellipse(x,y,s,s*0.8,0,0,Math.PI*2);
+    ctx.ellipse(x,y+1,s,s*0.85,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.1)';
+    ctx.beginPath();ctx.ellipse(x-2,y-2,s*0.4,s*0.35,0,0,Math.PI*2);ctx.fill();
   }
-  ctx.fill();
   noGlow();
 
-  // Crown/Star
+  // Boss 王冠
   if(e.isBoss){
     setGlow('#ffcc44',10);
     ctx.fillStyle='#ffcc44';
     ctx.beginPath();
-    ctx.moveTo(x-14,y-s-2);ctx.lineTo(x-10,y-s-12);
-    ctx.lineTo(x-5,y-s-4);ctx.lineTo(x,y-s-14);
-    ctx.lineTo(x+5,y-s-4);ctx.lineTo(x+10,y-s-12);
-    ctx.lineTo(x+14,y-s-2);ctx.closePath();ctx.fill();
-    fillCircle(x-9,y-s-9,2,'#ff4466');
-    fillCircle(x,y-s-11,2,'#44ff88');
-    fillCircle(x+9,y-s-9,2,'#ff4466');
+    ctx.moveTo(x-16,y-s-4);ctx.lineTo(x-12,y-s-16);
+    ctx.lineTo(x-7,y-s-6);ctx.lineTo(x,y-s-18);
+    ctx.lineTo(x+7,y-s-6);ctx.lineTo(x+12,y-s-16);
+    ctx.lineTo(x+16,y-s-4);ctx.closePath();ctx.fill();
+    fillCircle(x-10,y-s-13,2.5,'#ff4466');
+    fillCircle(x,y-s-15,2.5,'#44ff88');
+    fillCircle(x+10,y-s-13,2.5,'#ff4466');
     noGlow();
+    ctx.fillStyle='#ffcc44';ctx.font='bold 10px Rajdhani,sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚔ BOSS ⚔',x,y-s-24);
   } else if(e.isElite){
-    setGlow('#ffcc44',6);
-    ctx.fillStyle='#ffcc44';ctx.font='12px sans-serif';ctx.textAlign='center';
-    ctx.fillText('★',x,y-s-4);
+    setGlow('#ffcc44',8);
+    ctx.fillStyle='#ffcc44';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('★',x,y-s-6);
     noGlow();
+    ctx.strokeStyle='rgba(255,200,68,0.15)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(x,y,s*1.5+pulse,0,Math.PI*2);ctx.stroke();
   }
 
-  // Eyes
+  // Eyes (glowing)
   const eo=s*0.35;
-  fillCircle(x-eo,y-3,s*0.18,'#ffffff');
-  fillCircle(x+eo,y-3,s*0.18,'#ffffff');
-  fillCircle(x-eo-2,y-2,s*0.07,'#111122');
-  fillCircle(x+eo-2,y-2,s*0.07,'#111122');
+  setGlow(e.isBoss?'#ff4444':'#ffffff',6);
+  fillCircle(x-eo+pulse*0.5,y-3,s*0.2,'#ffffff');
+  fillCircle(x+eo-pulse*0.5,y-3,s*0.2,'#ffffff');
+  noGlow();
+  fillCircle(x-eo-2+pulse*0.5,y-2,s*0.07,'#111122');
+  fillCircle(x+eo-2-pulse*0.5,y-2,s*0.07,'#111122');
 
   // Hit flash
   if(e.hitTimer>0){
     ctx.fillStyle=`rgba(255,255,255,${e.hitTimer/15})`;
-    ctx.beginPath();ctx.arc(x,y,s*0.4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,s*0.5,0,Math.PI*2);ctx.fill();
   }
 
-  // Slow indicator
+  // Slow indicator (dashed ring)
   if(e.slowTimer>0){
-    ctx.strokeStyle=`rgba(100,200,255,${Math.min(1,e.slowTimer/80)})`;ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(x,y,s+4,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle=`rgba(100,200,255,${Math.min(1,e.slowTimer/80)})`;ctx.lineWidth=1.5;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.arc(x,y,s+6+pulse,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   // Burn spark
-  if(e.burnTimer>0&&Math.random()<0.3) addParticle(x+rand(-5,5),y-4,rand(-0.3,0.3),rand(-0.5,0),8,'#ff6600',2);
+  if(e.burnTimer>0&&Math.random()<0.3) addParticle(x+rand(-5,5),y-4,rand(-0.5,0.5),rand(-0.8,0),10,'#ff6600',2,'#ff4400');
 
   // HP bar (when damaged)
   if(e.hp<e.maxHp){
-    const bw2=s*1.8,hpR2=e.hp/e.maxHp;
-    fillRect(x-bw2/2,y-s-8,bw2,3,'rgba(0,0,0,0.5)');
-    ctx.fillStyle=hpR2>0.5?'#66ff88':hpR2>0.25?'#ffcc44':'#ff4444';
-    ctx.fillRect(x-bw2/2+1,y-s-7,(bw2-2)*Math.max(0,hpR2),1);
+    const bw2=s*2,hpR2=e.hp/e.maxHp;
+    fillRect(x-bw2/2,y-s-10,bw2,3,'rgba(0,0,0,0.6)');
+    const hpClr=hpR2>0.5?'#66ff88':hpR2>0.25?'#ffcc44':'#ff4444';
+    ctx.fillStyle=hpClr;
+    ctx.fillRect(x-bw2/2+1,y-s-9,(bw2-2)*Math.max(0,hpR2),1.5);
   }
 }
 
@@ -1949,9 +2027,52 @@ document.addEventListener('keydown',e=>{
 
 // ─── BOOT ───────────────────────────────────────────────────────────────────
 
-loadGame();
-G.screen='title';
-showOverlay('title');
+// 頂層錯誤處理：任何 JS 錯誤都會顯示在 canvas 上
+window.addEventListener('error', function(e){
+  const c = document.getElementById('gameCanvas');
+  if(c){
+    const cx = c.getContext('2d');
+    cx.fillStyle='#0a0a12'; cx.fillRect(0,0,c.width,c.height);
+    cx.fillStyle='#ff4444'; cx.font='14px monospace'; cx.textAlign='left';
+    cx.fillText('⚡ 執行錯誤: '+e.message, 20, 40);
+    cx.fillStyle='#8899bb'; cx.font='12px monospace';
+    cx.fillText('請截圖這個畫面回報', 20, 70);
+  }
+  console.error(e);
+});
+window.addEventListener('unhandledrejection', function(e){
+  console.error('Unhandled Promise:', e.reason);
+});
+
+// 保險：如果 3 秒後 canvas 沒更新，顯示提示
+let bootTimer = setTimeout(function(){
+  const c = document.getElementById('gameCanvas');
+  if(c && c.getContext){
+    const cx = c.getContext('2d');
+    // 只在 canvas 還是全黑時顯示
+    cx.fillStyle='#0a0a12'; cx.fillRect(0,0,c.width,c.height);
+    cx.fillStyle='#8899bb'; cx.font='16px Rajdhani,sans-serif'; cx.textAlign='center';
+    cx.fillText('載入中⋯', c.width/2, c.height/2-20);
+    cx.fillStyle='#556688'; cx.font='12px Rajdhani,sans-serif';
+    cx.fillText('如果畫面持續不動，請重新整理', c.width/2, c.height/2+10);
+  }
+}, 3000);
+
+try {
+  loadGame();
+  G.screen='title';
+  showOverlay('title');
+  clearTimeout(bootTimer);
+} catch(e){
+  console.error('Boot error:', e);
+  const c = document.getElementById('gameCanvas');
+  if(c){
+    const cx = c.getContext('2d');
+    cx.fillStyle='#0a0a12'; cx.fillRect(0,0,c.width,c.height);
+    cx.fillStyle='#ff4444'; cx.font='14px monospace'; cx.textAlign='left';
+    cx.fillText('啟動失敗: '+e.message, 20, 40);
+  }
+}
 requestAnimationFrame(gameLoop);
 </script>
 </body>
