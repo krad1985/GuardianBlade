@@ -3,43 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>巨劍守護 · Guardian Blade v3.0</title>
+<title>巨劍守護 · Guardian Blade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:'Segoe UI','Microsoft JhengHei',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:'Rajdhani','Segoe UI','Microsoft JhengHei',sans-serif}
 #gameWrapper{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 #gameCanvas{display:block;width:100%;height:100%;object-fit:contain;background:#111122;cursor:crosshair}
 #uiOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
-.screen-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);pointer-events:auto;z-index:10}
-.title{font-size:clamp(24px,5vw,56px);color:#c8a0ff;text-shadow:0 0 30px rgba(120,80,255,0.6);margin-bottom:8px;font-weight:bold;letter-spacing:4px;font-variant:small-caps}
-.subtitle{font-size:clamp(12px,2vw,20px);color:#8899bb;margin-bottom:30px;font-variant:small-caps}
-.btn{pointer-events:auto;padding:12px 40px;margin:6px;font-size:clamp(14px,1.8vw,22px);border:2px solid #6677aa;background:rgba(30,40,80,0.8);color:#ccddff;cursor:pointer;border-radius:8px;transition:all 0.2s;font-family:inherit;min-width:140px;font-variant:small-caps}
-.btn:hover{background:rgba(60,80,160,0.8);border-color:#99aaff;transform:scale(1.03)}
-.btn:active{transform:scale(0.97)}
-.btn-primary{border-color:#a080ff;background:rgba(60,40,120,0.7);color:#d0c0ff}
-.btn-primary:hover{background:rgba(80,60,160,0.8);border-color:#c0a0ff}
-.btn-disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+.screen-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,25,0.92);pointer-events:auto;z-index:10;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;animation:fadeIn 0.3s ease forwards}
+@keyframes fadeIn{to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.title{font-family:'Cinzel',serif;font-size:clamp(28px,5vw,56px);color:#c8a0ff;text-shadow:0 0 40px rgba(120,80,255,0.5),0 0 80px rgba(120,80,255,0.2);margin-bottom:4px;font-weight:700;letter-spacing:6px}
+.subtitle{font-size:clamp(13px,2vw,20px);color:#8899bb;margin-bottom:30px;letter-spacing:2px}
+.btn{pointer-events:auto;padding:12px 40px;margin:6px;font-size:clamp(14px,1.8vw,22px);border:2px solid #445577;background:linear-gradient(135deg,rgba(30,40,80,0.9),rgba(20,30,60,0.9));color:#ccddff;cursor:pointer;border-radius:10px;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);font-family:inherit;min-width:140px;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.btn:hover{background:linear-gradient(135deg,rgba(60,80,160,0.9),rgba(40,60,120,0.9));border-color:#8899cc;transform:translateY(-1px);box-shadow:0 4px 16px rgba(60,80,160,0.3)}
+.btn:active{transform:translateY(0) scale(0.98)}
+.btn-primary{border-color:#8866dd;background:linear-gradient(135deg,rgba(80,50,160,0.85),rgba(60,40,120,0.85));color:#d0c0ff}
+.btn-primary:hover{background:linear-gradient(135deg,rgba(100,70,200,0.9),rgba(80,60,160,0.9));border-color:#a080ff;box-shadow:0 4px 20px rgba(100,70,200,0.3)}
+.btn-disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;filter:grayscale(0.6)}
 .btn-small{padding:8px 20px;margin:4px;font-size:clamp(12px,1.4vw,16px);min-width:80px}
-.modal-box{background:rgba(10,12,30,0.95);border:2px solid #445577;border-radius:12px;padding:20px 30px;max-width:90vw;max-height:85vh;overflow-y:auto;pointer-events:auto;min-width:280px}
-.modal-box h2{color:#c8a0ff;font-size:clamp(18px,2.5vw,30px);margin-bottom:12px;text-align:center;font-variant:small-caps}
+.btn-danger{border-color:#cc4444;background:linear-gradient(135deg,rgba(80,20,20,0.85),rgba(60,15,15,0.85));color:#ff8888}
+.btn-danger:hover{background:linear-gradient(135deg,rgba(120,30,30,0.9),rgba(80,20,20,0.9));border-color:#ff6666}
+.modal-box{background:linear-gradient(145deg,rgba(15,18,35,0.97),rgba(10,12,28,0.97));border:1px solid #334466;border-radius:16px;padding:24px 32px;max-width:90vw;max-height:85vh;overflow-y:auto;pointer-events:auto;min-width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(100,120,200,0.1)}
+.modal-box h2{color:#c8a0ff;font-size:clamp(20px,2.5vw,32px);margin-bottom:14px;text-align:center;font-weight:600;letter-spacing:2px}
 .modal-box p{color:#99aacc;font-size:clamp(12px,1.4vw,17px);margin:4px 0}
-.choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0}
-.choice-card{border:1px solid #445577;border-radius:8px;padding:12px;text-align:center;cursor:pointer;background:rgba(20,30,60,0.6);transition:all 0.2s;pointer-events:auto}
-.choice-card:hover{border-color:#88aaff;background:rgba(40,60,120,0.7);transform:scale(1.03)}
-.choice-card .icon{font-size:clamp(24px,3vw,36px);margin-bottom:4px}
-.choice-card .cname{color:#ccddff;font-size:clamp(12px,1.3vw,16px);font-weight:bold}
-.choice-card .cdesc{color:#8899bb;font-size:clamp(10px,1.1vw,13px);margin-top:2px}
-.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
-.shop-item{border:1px solid #334466;border-radius:6px;padding:8px;text-align:center;cursor:pointer;background:rgba(15,20,40,0.7);pointer-events:auto;transition:all 0.15s}
-.shop-item:hover{border-color:#6688cc;background:rgba(30,50,90,0.7)}
-.shop-item .siname{color:#bbccee;font-size:clamp(11px,1.2vw,14px)}
-.shop-item .siprice{color:#ffcc66;font-size:clamp(10px,1.1vw,13px)}
-.shop-item .sicombo{color:#66ff99;font-size:clamp(9px,1vw,11px)}
-.upgrade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
-.upgrade-card{border:1px solid #445577;border-radius:8px;padding:10px;text-align:center;background:rgba(20,30,60,0.6);pointer-events:auto;transition:all 0.15s}
-.upgrade-card .uname{color:#ccddff;font-size:clamp(11px,1.2vw,14px);font-weight:bold}
-.upgrade-card .ulevel{color:#88aadd;font-size:clamp(10px,1.1vw,13px)}
-.upgrade-card .ucost{color:#ffcc66;font-size:clamp(10px,1.1vw,13px)}
+.choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+.choice-card{border:1px solid #334466;border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;background:linear-gradient(145deg,rgba(25,35,65,0.7),rgba(18,25,50,0.7));transition:all 0.25s cubic-bezier(0.4,0,0.2,1);pointer-events:auto;animation:slideUp 0.3s ease forwards}
+.choice-card:nth-child(1){animation-delay:0.05s}
+.choice-card:nth-child(2){animation-delay:0.1s}
+.choice-card:nth-child(3){animation-delay:0.15s}
+.choice-card:hover{border-color:#88aaff;background:linear-gradient(145deg,rgba(40,60,120,0.8),rgba(30,45,90,0.8));transform:translateY(-2px);box-shadow:0 6px 20px rgba(60,80,160,0.2)}
+.choice-card .icon{font-size:clamp(28px,3.5vw,42px);margin-bottom:6px}
+.choice-card .cname{color:#ccddff;font-size:clamp(13px,1.3vw,17px);font-weight:600}
+.choice-card .cdesc{color:#8899bb;font-size:clamp(10px,1.1vw,13px);margin-top:4px;line-height:1.3}
+.choice-card-hidden{border-color:#ffaa44;background:linear-gradient(145deg,rgba(60,30,15,0.7),rgba(40,20,10,0.7));box-shadow:0 0 20px rgba(255,170,68,0.15)}
+.choice-card-hidden:hover{border-color:#ffcc66;background:linear-gradient(145deg,rgba(80,45,25,0.8),rgba(60,30,15,0.8));box-shadow:0 0 30px rgba(255,170,68,0.25)}
+.choice-card-hidden .cname{color:#ffcc44}
+.equip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
+.equip-card{border:1px solid #334466;border-radius:10px;padding:10px;text-align:center;background:linear-gradient(145deg,rgba(20,25,50,0.7),rgba(14,18,38,0.7));transition:all 0.2s;pointer-events:auto;cursor:pointer}
+.equip-card:hover{border-color:#6688bb;background:linear-gradient(145deg,rgba(30,40,80,0.8),rgba(20,30,60,0.8));transform:scale(1.02)}
+.equip-card .ename{color:#bbccee;font-size:clamp(11px,1.2vw,14px);font-weight:600}
+.equip-card .estats{color:#8899bb;font-size:clamp(10px,1vw,12px)}
+.equip-card .ecurse{color:#ff8866;font-size:clamp(10px,1vw,12px)}
+.stage-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ffdd88;font-size:clamp(32px,5vw,56px);font-weight:700;text-shadow:0 0 40px rgba(255,200,80,0.5);z-index:3;pointer-events:none;animation:stageFlash 1.5s ease forwards;font-family:'Cinzel',serif;letter-spacing:4px}
+@keyframes stageFlash{0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(0.9)}}
 </style>
 </head>
 <body>
@@ -87,15 +98,41 @@ const WEAPONS = [
 
 const ARMOR_TYPES = ['helmet','chestplate','greaves','gauntlets','boots'];
 const ARMOR_NAMES = {helmet:'頭盔',chestplate:'胸甲',greaves:'護腿',gauntlets:'手套',boots:'靴子'};
-const ARMOR_STATS = {helmet:{hp:3,def:2},chestplate:{hp:5,def:3},greaves:{hp:2,def:2},gauntlets:{hp:1,def:1},boots:{hp:1,def:1}};
+const ARMOR_STATS = {helmet:{hp:3,def:2},chestplate:{hp:5,def:3},greaves:{hp:2,def:2},gauntlets:{hp:1,def:1},boots:{hp:2,spd:0.15}};
 
 function genEquip(type,rarity){
   const base = ARMOR_STATS[type];
   const mult = [0,1,1.5,2.2,3.2,4.5][rarity]||1;
-  return {
-    id: type+'_'+rarity, name: RARITY_NAMES[rarity]+ARMOR_NAMES[type],
-    type: type, rarity: rarity, hp: Math.floor(base.hp*mult), def: Math.floor(base.def*mult)
+  const eq = {
+    id: type+'_'+rarity+'_'+Date.now(), name: RARITY_NAMES[rarity]+ARMOR_NAMES[type],
+    type: type, rarity: rarity,
+    hp: Math.floor((base.hp||0)*mult),
+    def: Math.floor((base.def||0)*mult),
+    spd: Math.round(((base.spd||0)*mult)*100)/100
   };
+  // 30% 機率附加詛咒
+  if(Math.random()<0.3){
+    const curses = [
+      {atk:-2, name:'鏽蝕', desc:'攻擊-2'},
+      {hp:-10, name:'脆弱', desc:'HP-10'},
+      {spd:-0.08, name:'沉重', desc:'速度-8%'},
+      {goldMult:-0.1, name:'貧窮', desc:'金幣-10%'}
+    ];
+    const c = curses[Math.floor(Math.random()*curses.length)];
+    eq.curse = c;
+    eq.name = '詛咒'+eq.name;
+    for(const k in c){if(typeof c[k]==='number'){eq[k]=(eq[k]||0)+c[k];}}
+    // 詛咒裝備給予一個補償增益
+    const boons = [
+      {atk:3, name:'', desc:'攻擊+3'},
+      {goldMult:0.15, name:'', desc:'金幣+15%'},
+      {def:2, name:'', desc:'防禦+2'}
+    ];
+    const b = boons[Math.floor(Math.random()*boons.length)];
+    for(const k in b){if(typeof b[k]==='number'){eq[k]=(eq[k]||0)+b[k];}}
+    eq.curseDesc = c.name+'：'+c.desc+' ／ 補償：'+b.desc;
+  }
+  return eq;
 }
 function randomEquip(){
   const r = Math.random();
@@ -156,7 +193,9 @@ const PERM_UPGRADES = [
   {id:'perm_gold', name:'金幣加成', desc:'金幣+10%', max:15, costs:[25,40,60,85,115,150,190,235,285,340,400,465,535,610,690]},
   {id:'perm_drop', name:'掉落加成', desc:'掉落率+5%', max:15, costs:[30,45,65,90,120,160,200,250,300,360,420,490,560,640,720]},
   {id:'perm_slots', name:'額外欄位', desc:'+1物品欄', max:5, costs:[100,200,350,550,800]},
-  {id:'perm_armor', name:'鎧甲專精', desc:'防禦+1', max:20, costs:[20,30,45,65,90,120,160,200,250,300,360,420,490,560,640,720,810,900,1000,1100]}
+  {id:'perm_armor', name:'鎧甲專精', desc:'防禦+1', max:20, costs:[20,30,45,65,90,120,160,200,250,300,360,420,490,560,640,720,810,900,1000,1100]},
+  {id:'perm_art_slot', name:'聖物欄位', desc:'+1聖物格', max:4, costs:[80,160,280,450]},
+  {id:'perm_sk_slot', name:'技能欄位', desc:'+1技能格', max:3, costs:[60,130,250]},
 ];
 
 const REST_CHOICES = [
@@ -181,6 +220,19 @@ const RUN_PATHS = [
    mods:{goldMult:1, dropMult:1, enemyDmg:1,   spawnRate:1}},
 ];
 
+// 隱藏路線（低機率出現，獎勵豐厚）
+const HIDDEN_PATHS = [
+  {id:'hidden_legend', icon:'🌟', name:'傳說遺跡', desc:'傳說中的寶藏之路！所有獎勵x3，但敵人極強', danger:4,
+   hidden:true,
+   mods:{goldMult:3, dropMult:3, enemyDmg:2, enemyHp:1.5, soulMult:3, eliteRate:3}},
+  {id:'hidden_abyss', icon:'🌀', name:'深淵裂口', desc:'深淵之力湧現⋯靈魂x5，Boss必出', danger:5,
+   hidden:true,
+   mods:{goldMult:0.5, dropMult:2, enemyDmg:2.5, enemyHp:2, soulMult:5, bossWave:true, eliteRate:4}},
+  {id:'hidden_heaven', icon:'✨', name:'天界試煉', desc:'聖光降臨！掉落全是聖物與技能', danger:4,
+   hidden:true,
+   mods:{goldMult:1, dropMult:5, enemyDmg:1.5, enemyHp:1.2, soulMult:2, eliteRate:2}},
+];
+
 const TERRAINS = [
   {id:'plain',    name:'遺跡平原', bg:'#0a0a1a', floor:'rgba(30,35,60,0.4)', line:'rgba(40,45,70,0.3)', accent:'rgba(60,50,90,0.5)'},
   {id:'lava',     name:'熔岩峽谷', bg:'#1a0a0a', floor:'rgba(60,25,15,0.4)', line:'rgba(80,35,20,0.4)',  accent:'rgba(90,40,20,0.3)'},
@@ -192,33 +244,31 @@ const TERRAINS = [
 
 let G = {
   screen: 'title', score: 0, gold: 100, kills: 0, souls: 0,
-  wave: 0, waveEnemies: 0, waveMax: 0, waveTimer: 0,
-  waveState: 'idle', combo: 0, maxCombo: 0,
-  // 分歧路線與局次系統
-  runTimer: 0,        // 目前局已過 frame 數 (60fps ≈ 1秒)
-  runActive: false,   // 局進行中？
-  runPhase: 'path',   // 'path'|'playing'|'midchoice'|'result'
-  pathMods: {},       // 當前路線的 modifiers
-  terrain: null,      // 當前地形
-  totalRuns: 0,       // 已完成局數
-  roundSouls: 0,      // 這局收集的靈魂
-  roundGold: 0,       // 這局收集的金幣
-  pathChoices: [],    // 可選路線
-  // 事件
-  midChoiceTimer: 0,  // 中局選擇倒數
-  midChoiceMade: false,
+  stage: 1, stageEnemyKilled: 0, stageMaxEnemy: 15,
+  stageNotify: 0,       // >0 時顯示關卡通知
+  combo: 0, maxCombo: 0,
+  runTimer: 0,
+  runActive: false,
+  runPhase: 'path',     // 'path'|'playing'|'result'
+  pathMods: {},         // 當前路線 modifiers
+  terrain: null,
+  hiddenRun: false,     // 是否為隱藏關
+  totalRuns: 0,
+  roundSouls: 0,
+  roundGold: 0,
+  pathChoices: [],
   berserkActive: false, berserkTimer: 0,
   time: 0, dt: 0, lastTime: 0,
   mouseX: GW/2, mouseY: GH/2, mouseDown: false, touchId: null,
-  shakeX: 0, shakeY: 0, shakeMag: 0,
   particles: [], effects: [], drops: [], enemies: [], projectiles: [], dmgNumbers: [],
-  showOverlay: false, buildingChoice: null, readyNext: false,
-  waveCompleteItems: [], restChoices: [],
+  showOverlay: false,
   canSwing: true, swingCooldownTimer: 0,
   totalTime: 0,
+  collection: { equips: [] },  // 跨局裝備收藏
   player: {
     x: 200, y: GH/2, hp: 100, maxHp: 100, speed: 3.0,
-    atk: 10, range: 60, atkSpd: 0.6, def: 0, slotCount: 4,
+    atk: 10, range: 60, atkSpd: 0.6, def: 0,
+    artifactSlots: 2, skillSlots: 2,
     swingTimer: 0, swingAngle: 0, swingProg: 0,
     isSwinging: false, facing: 1,
     weaponIdx: 0, equips: {}, skills: [],
@@ -234,7 +284,8 @@ let G = {
 function saveGame(){
   try {
     localStorage.setItem('guardian_blade_save', JSON.stringify({
-      permUpgrades: G.permUpgrades, souls: G.souls, gold: G.gold
+      permUpgrades: G.permUpgrades, souls: G.souls, gold: G.gold,
+      collection: G.collection
     }));
   } catch(e){}
 }
@@ -246,6 +297,7 @@ function loadGame(){
       G.permUpgrades = d.permUpgrades||{};
       G.souls = d.souls||0;
       G.gold = d.gold||100;
+      G.collection = d.collection||{equips:[]};
     }
   } catch(e){}
 }
@@ -339,13 +391,12 @@ function spawnDrops(x,y,count){
   for(let i=0;i<count;i++){
     const r=Math.random();
     let item;
-    if(r<0.40) item={type:'gold',val:randInt(1,3+Math.floor(G.wave/3))};
-    else if(r<0.70) item={type:'gold',val:randInt(2,5+Math.floor(G.wave/4))};
-    else if(r<0.80) item={type:'soul',val:1};
-    else if(r<0.85 && G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.3) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id};
-    else if(r<0.90) item={type:'equip',data:randomEquip()};
-    else if(r<0.95) {const s=rndItem(SKILLS);item={type:'skill',id:s.id};}
-    else {const a=rndItem(ARTIFACTS);item={type:'artifact',id:a.id};}
+    if(r<0.55) item={type:'gold',val:randInt(1,3+Math.floor(G.stage/2))};
+    else if(r<0.80) item={type:'gold',val:randInt(2,5+Math.floor(G.stage/3))};
+    else if(r<0.90) item={type:'soul',val:1};
+    else if(r<0.95 && G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.2) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id};
+    else if(r<0.98) item={type:'equip',data:randomEquip()};
+    else {const s=rndItem(SKILLS);item={type:'skill',id:s.id};}
     if(item) G.drops.push(createDrop(x+rand(-15,15),y+rand(-15,15),item));
   }
 }
@@ -354,23 +405,27 @@ function forceDrop(x,y,type){
   let item;
   switch(type){
     case 'soul': item={type:'soul',val:1}; break;
-    case 'artifact': {const a=rndItem(ARTIFACTS);item={type:'artifact',id:a.id};} break;
-    case 'weapon': if(G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.5) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id}; else item={type:'gold',val:10}; break;
+    case 'weapon': if(G.player.weaponIdx<WEAPONS.length-1 && Math.random()<0.3) item={type:'weapon',id:WEAPONS[G.player.weaponIdx+1].id}; else item={type:'gold',val:10}; break;
     default: item={type:'gold',val:5};
   }
   if(item) G.drops.push(createDrop(x+rand(-10,10),y+rand(-10,10),item));
 }
 
-// ─── RUN SYSTEM（分歧路線 + 密集割草）────────────────────────────────────────
+// ─── RUN SYSTEM（關卡制 + 分歧路線）────────────────────────────────────────────
 
 function showPathSelect(){
   G.runPhase='path';
-  // 選 3 條路線（隨機排序後取前 3）
   const shuffled = shuffle([...RUN_PATHS]);
   G.pathChoices = shuffled.slice(0,3);
-  // 若總局數 > 2 則 boss 路線必出現一次
+  // 每 3 局強制出現一次 Boss 路線
   if(G.totalRuns>0 && G.totalRuns%3===0 && !G.pathChoices.find(p=>p.id==='boss')){
     G.pathChoices[0]=RUN_PATHS.find(p=>p.id==='boss');
+  }
+  // 低機率出現隱藏路線（取代一條普通路線）
+  if(G.totalRuns>=2 && Math.random()<0.18){
+    const hidden = shuffle(HIDDEN_PATHS)[0];
+    G.pathChoices[Math.floor(Math.random()*G.pathChoices.length)] = hidden;
+    G.hasHiddenPath = true;
   }
   showOverlay('pathselect');
 }
@@ -379,83 +434,73 @@ function startRun(){
   G.runActive=true;
   G.runPhase='playing';
   G.runTimer=0;
-  G.wave=0;
+  G.stage=1;
+  G.stageEnemyKilled=0;
+  G.stageMaxEnemy=12;
+  G.stageNotify=0;
   G.roundSouls=0;
   G.roundGold=0;
-  G.midChoiceTimer=0;
-  G.midChoiceMade=false;
   G.combo=0;
   G.guardian.hp = G.guardian.maxHp;
   G.guardian.shieldBlock = G.player.artifacts.includes('shield')?1:0;
-  G.waveState='spawning';
-  G.waveEnemies=0;
-  G.waveMax=9999;
-  G.waveTimer=0;
+  // 切換地形
   const tids = shuffle(TERRAINS.map(t=>t.id));
   const cur = TERRAINS.find(t=>t.id===G.terrain?.id);
   G.terrain = TERRAINS.find(t=>t.id!==(cur?cur.id:''));
   G.enemies=[];
-  G.spawnGrace=6; // 0.1 秒後就出怪
+  G.totalTime=0;
+  // 套用欄位解鎖
+  G.player.artifactSlots = 2 + (G.permUpgrades.perm_art_slot||0);
+  G.player.skillSlots = 2 + (G.permUpgrades.perm_sk_slot||0);
+  // 初始生成第一關
+  spawnStage();
 }
 
-function updateSpawning(){
-  // 短暫延遲讓畫面準備好
-  if(G.spawnGrace>0){G.spawnGrace--;return;}
-  G.waveTimer+=G.dt;
+function spawnStage(){
   const mod = G.pathMods || {};
-  const spd = mod.spawnRate || 1;
-  const accel = 1 + Math.floor(G.runTimer/1800);
-  const iv = Math.max(4, Math.floor((14 - G.runTimer/300) / spd / accel));
-  if(G.waveTimer>=iv){
-    G.waveTimer=0;
-    G.wave++;
-    spawnRunEnemies(mod);
-  }
-}
-
-function spawnRunEnemies(mod){
-  // 每批 3~8 隻密集出生
-  const base = 3 + Math.floor(G.runTimer/600); // 隨時間增加批次量
-  const count = mod.countMult ? Math.floor(base * mod.countMult) : base;
-  for(let i=0;i<Math.min(count,12);i++){
+  const stage = G.stage;
+  G.stageEnemyKilled=0;
+  // 每關敵人總數遞增：12 + stage*3
+  G.stageMaxEnemy = 12 + stage * 3;
+  G.enemies=[];
+  const count = G.stageMaxEnemy;
+  for(let i=0;i<count;i++){
     let type='normal';
     const r=Math.random();
-    const eliteRate = (mod.eliteRate||1) * 0.12;
-    const bossWave = mod.bossWave && G.wave%1===0 && G.wave===1;
-    if(bossWave && i===0){
+    // 隨關卡進階，敵人類型比例變化
+    const eliteRate = Math.min(0.3, 0.03 + stage*0.025) * (mod.eliteRate||1);
+    const heavyRate = 0.15 + stage*0.02;
+    const fastRate = 0.15;
+    const bossStage = (mod.bossWave && stage%5===0);
+    if(bossStage && i===0){
       type='boss';
     } else if(r<eliteRate){
       type='elite';
-    } else if(r<0.55){
-      type='normal';
-    } else if(r<0.75){
-      type='fast';
-    } else {
+    } else if(r<eliteRate+heavyRate){
       type='heavy';
+    } else if(r<eliteRate+heavyRate+fastRate){
+      type='fast';
     }
-    const e = createEnemy(type, Math.max(1, Math.floor(G.runTimer/600)));
+    const e = createEnemy(type, stage);
     if(mod.enemyHp) e.hp = Math.max(1, Math.floor(e.hp * mod.enemyHp));
     if(mod.enemyDmg) e.dmg = Math.max(0.5, e.dmg * mod.enemyDmg);
+    // 散布在右側
+    e.x = GW + 30 + Math.random()*120;
+    e.y = 50 + Math.random()*(GH-120);
     G.enemies.push(e);
   }
+  // 顯示關卡通知
+  G.stageNotify = 60; // 1 秒
 }
 
-function checkRunEnd(){
-  // 守護劍 HP=0 → 遊戲結束
-  if(G.guardian.hp<=0){
-    G.guardian.hp=0;
-    endRun('death');
-    return;
-  }
-  // 時間到 (90秒 = 5400 frames) → 強制結束
-  if(G.runTimer >= 5400){
-    endRun('timeout');
-    return;
-  }
-  // 中局選擇：45秒時出現一次分歧
-  if(G.runTimer >= 2700 && !G.midChoiceMade && !G.showOverlay){
-    G.midChoiceMade=true;
-    showMidRunChoice();
+function checkStageClear(){
+  // 檢查是否所有敵人已清除
+  const alive = G.enemies.filter(e=>!e.dead).length;
+  const killed = G.stageMaxEnemy - alive;
+  if(alive===0 && G.stageMaxEnemy>0){
+    // 關卡完成
+    G.stage++;
+    spawnStage();
   }
 }
 
@@ -463,8 +508,8 @@ function endRun(reason){
   G.runActive=false;
   G.runPhase='result';
   G.totalRuns++;
-  // 結算：這局獲得的靈魂和累積金幣
-  const soulBonus = Math.floor(G.runTimer/300) + Math.floor(G.kills/20);
+  // 結算：根據關卡數與擊殺數
+  const soulBonus = Math.floor(G.stage*2) + Math.floor(G.kills/20);
   const soulMult = (G.pathMods.soulMult||1);
   G.souls += Math.floor(soulBonus * soulMult);
   G.roundSouls = Math.floor(soulBonus * soulMult);
@@ -472,23 +517,13 @@ function endRun(reason){
   showOverlay('runresult');
 }
 
-function showMidRunChoice(){
-  const choices = shuffle([...RUN_PATHS]).slice(0,2);
-  // 確保跟當前路線不同
-  while(choices[0] && choices[0].id === (G.pathMods._id||'')){
-    choices[0]=RUN_PATHS[Math.floor(Math.random()*RUN_PATHS.length)];
-  }
-  G.pathChoices = choices;
-  showOverlay('midchoice');
-}
-
 function nextRun(){
-  // 快速下一局：隨機選路線，直接開始
   G.runActive=false;
   G.showOverlay=false;
   OV.innerHTML='';
   const paths = shuffle(RUN_PATHS);
   G.pathMods = {...paths[0].mods, _id:paths[0].id, _name:paths[0].name};
+  G.hiddenRun = false;
   recalcStats();
   startRun();
 }
@@ -587,20 +622,22 @@ function enemyKilled(e,baseAtk){
 
   G.combo++;
   if(G.combo>G.maxCombo) G.maxCombo=G.combo;
-  // 普通掉落（降低機率）
-  if(Math.random()<0.2) spawnDrops(e.x,e.y,1);
-  // 菁英必定掉落
+  // 掉落（基礎 8%）
+  if(Math.random()<0.08) spawnDrops(e.x,e.y,1);
+  // 菁英額外掉落
   if(e.isElite){
-    if(Math.random()<0.4) spawnDrops(e.x,e.y,1);
-    if(Math.random()<0.25) forceDrop(e.x,e.y,'artifact');
+    if(Math.random()<0.3) spawnDrops(e.x,e.y,1);
     forceDrop(e.x,e.y,'soul');
+    // 菁英 20% 機率掉落指定稀有物品（技能書）
+    if(Math.random()<0.2){const s=rndItem(SKILLS);G.drops.push(createDrop(e.x+rand(-10,10),e.y+rand(-10,10),{type:'skill',id:s.id}));}
   }
-  // BOSS 必定大量掉落
+  // BOSS 大量掉落
   if(e.isBoss){
-    spawnDrops(e.x,e.y,3);
-    forceDrop(e.x,e.y,'artifact');
+    spawnDrops(e.x,e.y,4);
     forceDrop(e.x,e.y,'soul');
-    if(Math.random()<0.4) forceDrop(e.x,e.y,'weapon');
+    // Boss 必掉技能書
+    const s=rndItem(SKILLS);G.drops.push(createDrop(e.x+rand(-10,10),e.y+rand(-10,10),{type:'skill',id:s.id}));
+    if(Math.random()<0.5) forceDrop(e.x,e.y,'weapon');
   }
 }
 
@@ -734,12 +771,14 @@ function checkSynergyForArt(id){
 
 function recalcStats(){
   const p=G.player, wep=WEAPONS[p.weaponIdx]||WEAPONS[0];
-  let atk=wep.atk, range=wep.range, spd=wep.spd, hp=100, def=0;
+  let atk=wep.atk, range=wep.range, spd=wep.spd, hp=100, def=0, spdMult=1;
   const pu=G.permUpgrades;
   atk+=(pu.perm_atk||0)*2;
   hp+=(pu.perm_hp||0)*5;
   def+=(pu.perm_armor||0);
-  for(const eq of Object.values(p.equips)){if(eq){hp+=eq.hp||0;def+=eq.def||0;}}
+  for(const eq of Object.values(p.equips)){if(eq){hp+=eq.hp||0;def+=eq.def||0;spdMult-=eq.spd?(-eq.spd):0;}}
+  // 基礎速度 3.0 + 靴子加成
+  p.speed = 3.0 + spdMult*0.5;
   const ru=G.runUpgrades;
   atk+=(ru.atk||0)*2;
   range+=(ru.range||0)*3;
@@ -750,7 +789,8 @@ function recalcStats(){
   p.range=Math.max(30,range);
   p.atkSpd=Math.max(0.15,spd);
   p.def=Math.max(0,def);
-  p.slotCount=4+(pu.perm_slots||0)+(ru.slots||0);
+  p.artifactSlots = 2 + (pu.perm_art_slot||0);
+  p.skillSlots = 2 + (pu.perm_sk_slot||0);
   if(p.hp>p.maxHp)p.hp=p.maxHp;
 }
 
@@ -760,9 +800,9 @@ function gameOver(){
   G.screen='gameover';
   G.runActive=false;
   document.getElementById('pauseBtn').style.display='none';
-  // 追蹤總遊玩次數與最佳波次
-  if(G.wave>(G.permUpgrades.bestWave||0)){
-    G.permUpgrades.bestWave=G.wave;
+  // 追蹤最佳進度
+  if(G.stage>(G.permUpgrades.bestStage||0)){
+    G.permUpgrades.bestStage=G.stage;
   }
   G.permUpgrades.totalRuns=(G.permUpgrades.totalRuns||0)+1;
   // 靈魂碎片獎勵（全 session 結算）
@@ -775,15 +815,16 @@ function gameOver(){
 // ─── INIT ───────────────────────────────────────────────────────────────────
 
 function initGame(){
-  G.score=0;G.gold=100;G.kills=0;G.wave=0;
+  G.score=0;G.gold=100;G.kills=0;G.stage=1;
   G.enemies=[];G.drops=[];G.particles=[];G.effects=[];G.projectiles=[];G.dmgNumbers=[];
-  G.shakeMag=0;G.combo=0;G.maxCombo=0;
+  G.combo=0;G.maxCombo=0;
   G.berserkActive=false;G.berserkTimer=0;G.totalTime=0;
-  G.runUpgrades={};G.waveState='idle';
-  G.totalRuns=0;G.roundSouls=0;G.roundGold=0;
+  G.runUpgrades={};
+  G.totalRuns=0;G.roundSouls=0;G.roundGold=0;G.hiddenRun=false;
   const p=G.player;
   p.x=200;p.y=GH/2;p.hp=100;p.maxHp=100;p.speed=3.0;
-  p.atk=10;p.range=60;p.atkSpd=0.6;p.def=0;p.slotCount=4;
+  p.atk=10;p.range=60;p.atkSpd=0.6;p.def=0;
+  p.artifactSlots=2;p.skillSlots=2;
   p.swingTimer=0;p.swingAngle=0;p.isSwinging=false;p.facing=1;
   p.weaponIdx=0;p.equips={};p.skills=[];p.artifacts=[];p.activeSynergies=[];
   p.killStreak=0;p.skillTimers={};p.skillLevels={};
@@ -797,6 +838,7 @@ function initGame(){
   // 隨機選擇一條路線，直接開始
   const paths = shuffle(RUN_PATHS);
   G.pathMods = {...paths[0].mods, _id:paths[0].id, _name:paths[0].name};
+  G.hiddenRun = false;
   startRun();
 }
 
@@ -804,7 +846,6 @@ function initGame(){
 
 function update(){
   const p=G.player;
-  G.shakeX*=0.85;G.shakeY*=0.85;G.shakeMag*=0.9;
 
   // Move player toward mouse
   if(G.screen==='playing'){
@@ -866,7 +907,6 @@ function update(){
       }
       G.guardian.hp-=e.dmg;
       addEffect(G.guardian.x-10,G.guardian.y,25,'#ff4444',10);
-      G.shakeMag=Math.min(G.shakeMag+5,15);
       if(G.player.artifacts.includes('thorns')){
         const m=G.player.artifacts.includes('shield')?2:1;
         e.hp-=Math.floor(e.dmg*0.25*m);
@@ -953,17 +993,18 @@ function update(){
     if(G.effects[i].life<=0) G.effects.splice(i,1);
   }
 
-  // Run timer + 密集出生
+  // Stage 系統：檢查關卡進度
   if(G.runActive && G.runPhase==='playing'){
     G.runTimer += G.dt;
-    updateSpawning();
-    checkRunEnd();
-  }
-
-  // 中局選擇計時（若已觸發但 overlay 未關，等使用者選完）
-  if(G.runPhase==='midchoice' && !G.showOverlay){
-    G.runPhase='playing';
-    G.showOverlay=false;
+    // 守護劍 HP=0 → 結束
+    if(G.guardian.hp<=0){
+      G.guardian.hp=0;
+      endRun('death');
+    }
+    // 關卡通知計時
+    if(G.stageNotify>0) G.stageNotify--;
+    // 檢查關卡是否完成
+    checkStageClear();
   }
 
   // Background mist
@@ -987,23 +1028,57 @@ function collectDrop(d){
     }
     case 'equip':{
       const eq=item.data;if(!eq)break;
-      const old=G.player.equips[eq.type];
-      if(!old||eq.rarity>old.rarity){G.player.equips[eq.type]=eq;addEffect(d.x,d.y,30,'#44dd88',15);recalcStats();}
+      // 加入收藏（可跨局保留）
+      if(!G.collection) G.collection={equips:[]};
+      const exist = G.collection.equips.find(e=>e.id===eq.id);
+      if(!exist){
+        G.collection.equips.push(eq);
+        saveGame();
+      }
+      // 若目前未裝備此部位，自動穿上
+      if(!G.player.equips[eq.type] || eq.rarity > G.player.equips[eq.type].rarity){
+        G.player.equips[eq.type]=eq;
+        addEffect(d.x,d.y,30,'#44dd88',15);
+        recalcStats();
+      }
       break;
     }
     case 'skill':{
       const sid=item.id;
-      if(!G.player.skills.includes(sid)){G.player.skills.push(sid);G.player.skillLevels[sid]=1;}
-      else G.player.skillLevels[sid]=(G.player.skillLevels[sid]||1)+1;
+      const slots = G.player.skillSlots;
+      if(!G.player.skills.includes(sid)){
+        if(G.player.skills.length >= slots){
+          // 欄位已滿，顯示替換選項（不中斷遊戲，引導玩家選擇）
+          showReplaceDialog('skill', sid);
+          addParticle(d.x,d.y,0,0,8,'#ff66aa',4);
+          return;
+        }
+        G.player.skills.push(sid);G.player.skillLevels[sid]=1;
+      } else {
+        G.player.skillLevels[sid]=(G.player.skillLevels[sid]||1)+1;
+      }
       addEffect(d.x,d.y,30,'#ff66aa',15);break;
     }
     case 'artifact':{
       const aid=item.id;
-      if(!G.player.artifacts.includes(aid)){G.player.artifacts.push(aid);checkSynergies();}
+      const slots = G.player.artifactSlots;
+      if(!G.player.artifacts.includes(aid)){
+        if(G.player.artifacts.length >= slots){
+          showReplaceDialog('artifact', aid);
+          addParticle(d.x,d.y,0,0,8,'#ffaa44',4);
+          return;
+        }
+        G.player.artifacts.push(aid);checkSynergies();
+      }
       addEffect(d.x,d.y,35,'#ffaa44',20);break;
     }
   }
   addParticle(d.x,d.y,0,0,8,'#ffffff',4);
+}
+
+function showReplaceDialog(type, id){
+  // 不中斷遊戲，只在下次自然 pause 時提示
+  // 暫時先自動忽略多餘的掉落
 }
 
 // ─── DRAWING ────────────────────────────────────────────────────────────────
@@ -1383,24 +1458,26 @@ function drawUI(){
   const p=G.player,wep=WEAPONS[p.weaponIdx];
 
   // Top bar
-  fillRect(0,0,GW,28,'rgba(0,0,0,0.65)');
-  ctx.fillStyle='#ccddff';ctx.font='11px sans-serif';ctx.textBaseline='middle';
+  fillRect(0,0,GW,28,'rgba(0,0,0,0.7)');
+  ctx.fillStyle='#ccddff';ctx.font='12px Rajdhani,sans-serif';ctx.textBaseline='middle';
 
   ctx.textAlign='left';
-  ctx.fillStyle='#88aaff';
-  const secs = Math.floor(G.runTimer/60);
   const pm=G.pathMods||{};
-  ctx.fillText(`⏱ ${secs}s  |  ${pm._name||'準備中'}`,10,14);
+  const hiddenMark = G.hiddenRun ? '🌟 ' : '';
+  ctx.fillStyle='#88aaff';
+  ctx.fillText(`第${G.stage}關`,10,14);
   ctx.fillStyle='#ff8866';
-  ctx.fillText(`敵人 ${G.enemies.length}`,280,14);
+  ctx.fillText(`殘敵 ${G.enemies.filter(e=>!e.dead).length}/${G.stageMaxEnemy}`,100,14);
+  ctx.fillStyle='#8899bb';
+  ctx.fillText(hiddenMark+pm._name||'',220,14);
 
   ctx.textAlign='center';
   ctx.fillStyle='#ffdd88';
-  ctx.fillText(`分數 ${G.score}`,330,14);
+  ctx.fillText(`分數 ${G.score}`,390,14);
   ctx.fillStyle='#ffcc44';
-  ctx.fillText(`💰 ${G.gold}`,460,14);
+  ctx.fillText(`💰 ${G.gold}`,490,14);
   ctx.fillStyle='#88dd88';
-  ctx.fillText(`擊殺 ${G.kills}`,560,14);
+  ctx.fillText(`擊殺 ${G.kills}`,580,14);
 
   ctx.textAlign='right';
   ctx.fillStyle=rarityColor(wep.r);
@@ -1408,13 +1485,13 @@ function drawUI(){
 
   // Combo
   if(G.combo>2){
-    ctx.fillStyle='#ff8844';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#ff8844';ctx.font='bold 14px Rajdhani,sans-serif';ctx.textAlign='center';
     ctx.fillText(`🔥 ${G.combo} 連擊!`,GW/2,50);
   }
 
   // Berserk
   if(G.berserkActive&&Math.sin(G.totalTime*0.2)>0){
-    ctx.fillStyle='#ff4444';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#ff4444';ctx.font='bold 13px Rajdhani,sans-serif';ctx.textAlign='center';
     ctx.fillText('⚡ 狂暴模式 ⚡',GW/2,38);
   }
 
@@ -1456,13 +1533,6 @@ function drawUI(){
 function render(){
   if(G.screen==='title'){ drawTitleScreen(); return; }
 
-  ctx.save();
-  if(G.shakeMag>0.5){
-    G.shakeX=(Math.random()-0.5)*G.shakeMag;
-    G.shakeY=(Math.random()-0.5)*G.shakeMag;
-    ctx.translate(G.shakeX,G.shakeY);
-  }
-
   drawBackground();
   drawGuardianSword();
   drawDrops();
@@ -1472,7 +1542,24 @@ function render(){
   drawEffectsList();
   drawDamageNumbers();
 
-  ctx.restore();
+  // 關卡通知（overlay 效果）
+  if(G.stageNotify>0){
+    const alpha = G.stageNotify>50 ? 1 : G.stageNotify/50;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle='#ffdd88';ctx.font='bold 48px Cinzel,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    const scale = G.stageNotify>50 ? 0.9 + (60-G.stageNotify)/60*0.1 : 1;
+    ctx.translate(GW/2,GH/2);
+    ctx.scale(scale,scale);
+    ctx.shadowColor='rgba(255,200,80,0.5)';ctx.shadowBlur=40;
+    ctx.fillText('第 '+G.stage+' 關',0,-10);
+    ctx.font='18px Rajdhani,sans-serif';
+    ctx.fillStyle='#aabbdd';
+    ctx.shadowBlur=0;
+    ctx.fillText('Stage '+G.stage,0,30);
+    ctx.restore();
+  }
+
   drawUI();
 }
 
@@ -1486,22 +1573,22 @@ function drawTitleScreen(){
     ctx.beginPath();ctx.arc(x,y,rand(1,3),0,Math.PI*2);ctx.fill();
   }
 
-  setGlow('#8866ff',40);
-  ctx.fillStyle='#c8a0ff';ctx.font='bold 44px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('巨劍守護',GW/2,160);
+  setGlow('#8866ff',50);
+  ctx.fillStyle='#c8a0ff';ctx.font='bold 48px Cinzel,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('巨劍守護',GW/2,155);
   noGlow();
 
-  ctx.fillStyle='#8899bb';ctx.font='15px sans-serif';
-  ctx.fillText('Guardian Blade v3.0',GW/2,200);
+  ctx.fillStyle='#8899bb';ctx.font='17px Rajdhani,sans-serif';
+  ctx.fillText('Guardian Blade',GW/2,195);
 
   // Decorative swords
-  ctx.strokeStyle='rgba(136,170,255,0.25)';ctx.lineWidth=2;
-  for(let i=0;i<2;i++){const sx=i===0?120:GW-120;ctx.beginPath();ctx.moveTo(sx,120);ctx.lineTo(sx,145);ctx.moveTo(sx-10,128);ctx.lineTo(sx+10,128);ctx.moveTo(sx-6,145);ctx.lineTo(sx+6,145);ctx.stroke();}
+  ctx.strokeStyle='rgba(136,170,255,0.3)';ctx.lineWidth=2;
+  for(let i=0;i<2;i++){const sx=i===0?120:GW-120;ctx.beginPath();ctx.moveTo(sx,115);ctx.lineTo(sx,145);ctx.moveTo(sx-10,128);ctx.lineTo(sx+10,128);ctx.moveTo(sx-6,145);ctx.lineTo(sx+6,145);ctx.stroke();}
 
-  ctx.fillStyle='#556688';ctx.font='11px sans-serif';
-  ctx.fillText('自動揮劍 · 橫向無雙',GW/2,240);
-  ctx.fillStyle='#445566';ctx.font='10px sans-serif';
-  ctx.fillText(`靈魂碎片: ${G.souls}  |  累計金幣: ${G.gold}`,GW/2,265);
+  ctx.fillStyle='#556688';ctx.font='13px Rajdhani,sans-serif';
+  ctx.fillText('自動揮劍 · 橫向無雙',GW/2,235);
+  ctx.fillStyle='#445566';ctx.font='12px Rajdhani,sans-serif';
+  ctx.fillText(`靈魂碎片: ${G.souls}  |  累計金幣: ${G.gold}`,GW/2,260);
 }
 
 // ─── OVERLAY UI ─────────────────────────────────────────────────────────────
@@ -1514,9 +1601,9 @@ function showOverlay(type){
     case 'gameover': html=gameOverHTML(); break;
     case 'pause': html=pauseHTML(); break;
     case 'pathselect': html=pathSelectHTML(); break;
-    case 'midchoice': html=midChoiceHTML(); break;
     case 'runresult': html=runResultHTML(); break;
     case 'perm': html=permUpgradeHTML(); break;
+    case 'equip': html=equipManageHTML(); break;
     case 'help': html=helpHTML(); break;
     case '': html=''; G.showOverlay=false; break;
   }
@@ -1525,15 +1612,17 @@ function showOverlay(type){
 
 function titleOverlayHTML(){
   const tr=G.permUpgrades.totalRuns||0;
-  const bw=G.permUpgrades.bestWave||0;
+  const bs=G.permUpgrades.bestStage||0;
+  const eqCount = G.collection?.equips?.length||0;
   const stats=tr>0?`<div style="margin-top:12px;color:#8899bb;font-size:12px">
-    <p>總遊玩次數: ${tr} 次  |  最佳進度: ${bw} 波</p>
+    <p>總遊玩次數: ${tr} 次  |  最佳進度: 第${bs}關  |  收藏裝備: ${eqCount}件</p>
   </div>`:'';
   return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;pointer-events:auto">
     <div class="title">巨劍守護</div>
-    <div class="subtitle">Guardian Blade v3.0</div>
+    <div class="subtitle">Guardian Blade</div>
     <button class="btn btn-primary" onclick="startGame()">⚔️ 開始遊戲</button>
     <button class="btn" onclick="showOverlay('perm')">💜 靈魂強化</button>
+    <button class="btn" onclick="showOverlay('equip')">🛡️ 裝備管理</button>
     <button class="btn" onclick="showOverlay('help')">📖 操作說明</button>
     ${stats}
     <div style="margin-top:${tr>0?'8':'24'}px;color:#445566;font-size:11px;text-align:center">
@@ -1563,10 +1652,15 @@ function pathSelectHTML(){
   let cards='';
   for(const p of G.pathChoices){
     const bar='⬜'.repeat(p.danger)+'⬜'.repeat(5-p.danger);
-    cards+=`<div class="choice-card" onclick="pickPath('${p.id}')">
+    const isHidden = p.hidden;
+    const cls = 'choice-card' + (isHidden ? ' choice-card-hidden' : '');
+    const nmColor = p.danger>3?'#ff6644':p.danger>2?'#ffcc44':'#66ff88';
+    const hiddenBadge = isHidden ? '<div style="font-size:10px;color:#ffcc44;margin-top:2px">🌟 隱藏路線</div>' : '';
+    cards+=`<div class="${cls}" onclick="pickPath('${p.id}')">
       <div class="icon">${p.icon}</div>
-      <div class="cname" style="color:${p.danger>3?'#ff6644':p.danger>2?'#ffcc44':'#66ff88'}">${p.name}</div>
+      <div class="cname" style="color:${nmColor}">${p.name}</div>
       <div class="cdesc">${p.desc}</div>
+      ${hiddenBadge}
       <div class="cdesc" style="color:#445566;font-size:10px">難度 ${bar}</div>
     </div>`;
   }
@@ -1576,39 +1670,25 @@ function pathSelectHTML(){
     <p style="text-align:center;color:#8899bb;font-size:12px">${runs>0?'已完成 '+runs+' 局':'初入守護遺跡'}</p>
     <div class="choice-grid" style="grid-template-columns:repeat(${Math.min(G.pathChoices.length,3)},1fr)">${cards}</div>
     <div style="text-align:center;margin-top:10px">
-      <button class="btn btn-small btn-disabled" onclick="gameOver()" style="font-size:12px;padding:6px 16px">🏁 結束旅程</button>
-    </div>
-  </div>`;
-}
-
-function midChoiceHTML(){
-  let cards='';
-  for(const p of G.pathChoices){
-    cards+=`<div class="choice-card" onclick="midPick('${p.id}')">
-      <div class="icon">${p.icon}</div>
-      <div class="cname">${p.name}</div>
-      <div class="cdesc">${p.desc}</div>
+      <button class="btn btn-small" onclick="gameOver()" style="font-size:12px;padding:6px 16px">🏁 結束旅程</button>
     </div>`;
-  }
-  return `<div class="modal-box">
-    <h2>⚡ 中局抉擇</h2>
-    <p style="text-align:center;color:#8899bb">接下來的戰況即將改變...</p>
-    <div class="choice-grid" style="grid-template-columns:repeat(2,1fr)">${cards}</div>
-  </div>`;
 }
+// ─── 結算畫面 ──────────────────────────────────────────────────────────────────
 
 function runResultHTML(){
   const pm=G.pathMods||{};
+  const bestStage = G.permUpgrades.bestStage||0;
   return `<div class="modal-box" style="text-align:center">
     <h2>⚔️ ${G.totalRuns>1?'第 '+G.totalRuns+' 局 達成':'首局完成'}</h2>
-    <p style="color:#8899bb;font-size:13px">路線: ${pm._name||'未知'}  |  存活 ${Math.floor(G.runTimer/60)} 秒</p>
+    <p style="color:#8899bb;font-size:13px">路線: ${pm._name||'未知'}  |  推進到第 ${G.stage} 關</p>
     <div style="margin:14px 0">
       <p style="color:#ffcc44">💰 金幣 +${G.roundGold}</p>
       <p style="color:#cc66ff">💜 靈魂 +${G.roundSouls}</p>
-      <p style="color:#88ddff">擊殺 ${G.kills}  |  連擊 ${G.maxCombo}</p>
+      <p style="color:#88ddff">擊殺 ${G.kills}  |  連擊 ${G.maxCombo}  |  最佳紀錄: 第${bestStage}關</p>
     </div>
     <button class="btn btn-primary" onclick="nextRun()">⚡ 快速下一局</button>
     <button class="btn" onclick="showPathSelect()" style="margin-top:4px">🗺️ 選擇路線</button>
+    <button class="btn btn-small" onclick="showOverlay('equip')" style="margin-top:4px">🛡️ 裝備管理</button>
     <button class="btn" onclick="gameOver()" style="margin-top:4px">🏁 結束旅程</button>
   </div>`;
 }
@@ -1657,6 +1737,51 @@ function permUpgradeHTML(){
   return html;
 }
 
+function equipManageHTML(){
+  const col = G.collection?.equips||[];
+  const types = ['helmet','chestplate','greaves','gauntlets','boots'];
+  const typeNames = {helmet:'頭盔',chestplate:'胸甲',greaves:'護腿',gauntlets:'手套',boots:'靴子'};
+  let html = '<div class="modal-box" style="max-width:650px"><h2>🛡️ 裝備管理</h2>';
+  if(col.length===0){
+    html += '<p style="text-align:center;color:#667788">尚無收藏裝備，擊殺菁英怪可獲得</p>';
+  } else {
+    for(const type of types){
+      const items = col.filter(e=>e.type===type).sort((a,b)=>b.rarity-a.rarity);
+      if(items.length===0) continue;
+      html += `<p style="color:#8899bb;font-size:13px;margin:8px 0 4px;border-bottom:1px solid #223344;padding-bottom:4px">${typeNames[type]}</p><div class="equip-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">`;
+      for(const eq of items){
+        const equipped = G.player.equips[type]?.id===eq.id;
+        const stars = '★'.repeat(eq.rarity)+'☆'.repeat(5-eq.rarity);
+        const curseInfo = eq.curseDesc ? `<div class="ecurse">${eq.curseDesc}</div>` : '';
+        const stats = [];
+        if(eq.hp) stats.push('HP+'+eq.hp);
+        if(eq.def) stats.push('DEF+'+eq.def);
+        if(eq.spd) stats.push('SPD+'+(eq.spd*100)+'%');
+        if(eq.atk) stats.push('ATK+'+(eq.atk>0?'+'+eq.atk:eq.atk));
+        if(eq.goldMult) stats.push('金幣'+(eq.goldMult>0?'+'+Math.floor(eq.goldMult*100)+'%':Math.floor(eq.goldMult*100)+'%'));
+        html += `<div class="equip-card" onclick="${equipped?'':'equipItem(\''+eq.id+'\')'}">
+          <div class="ename" style="color:${rarityColor(eq.rarity)}">${equipped?'✔ ':''}${eq.name}</div>
+          <div style="color:${rarityColor(eq.rarity)};font-size:10px">${stars}</div>
+          <div class="estats">${stats.join(' ')}</div>
+          ${curseInfo}
+        </div>`;
+      }
+      html += '</div>';
+    }
+  }
+  html += `<div style="text-align:center;margin-top:12px"><button class="btn btn-primary" onclick="closeOverlay()">返回</button></div></div>`;
+  return html;
+}
+
+function equipItem(id){
+  const col = G.collection?.equips||[];
+  const eq = col.find(e=>e.id===id);
+  if(!eq) return;
+  G.player.equips[eq.type]=eq;
+  recalcStats();
+  showOverlay('equip');
+}
+
 function helpHTML(){
   return `<div class="modal-box" style="max-width:500px"><h2>📖 遊戲說明</h2><p style="color:#8899bb;line-height:1.8;font-size:13px">🖱️ <b>移動</b>：滑鼠/手指追蹤角色<br>⚔️ <b>戰鬥</b>：靠近敵人自動揮劍<br>💎 <b>收集</b>：掉落物自動飛向玩家<br><br>🗺️ <b>分歧路線</b>：每局結束後選擇下一條路<br>💰 財富之路=金幣x2 但敵人變強<br>💎 寶物之路=掉落率x2 菁英大增<br>👹 獸潮之路=敵人超多但血量減半<br>👑 挑戰之路=Boss關 靈魂x3<br>⚖️ 均衡之路=標準難度<br><br>🛡️ <b>守護巨劍</b>不被破壞<br>💜 靈魂碎片用於永久強化<br>🔄 聖物之間有組合效果</p><button class="btn btn-primary" onclick="closeOverlay()">返回</button></div>`;
 }
@@ -1675,34 +1800,13 @@ function closeOverlay(){
 // ─── 分歧路線回調 ──────────────────────────────────────────────────────────────
 
 function pickPath(id){
-  const path = RUN_PATHS.find(p=>p.id===id);
+  let path = RUN_PATHS.find(p=>p.id===id) || HIDDEN_PATHS.find(p=>p.id===id);
   if(!path) return;
   G.pathMods = {...path.mods, _id:path.id, _name:path.name};
+  G.hiddenRun = !!path.hidden;
   G.showOverlay=false;
   OV.innerHTML='';
   startRun();
-}
-
-function midPick(id){
-  const path = RUN_PATHS.find(p=>p.id===id);
-  if(!path) return;
-  // 中局選擇：將 modifier 疊加到當前路線
-  const base = G.pathMods || {};
-  G.pathMods = {
-    goldMult: (base.goldMult||1) * (path.mods.goldMult||1),
-    dropMult: (base.dropMult||1) * (path.mods.dropMult||1),
-    enemyDmg: (base.enemyDmg||1) * (path.mods.enemyDmg||1),
-    spawnRate: (base.spawnRate||1) * (path.mods.spawnRate||1),
-    eliteRate: (base.eliteRate||1) + (path.mods.eliteRate||0),
-    enemyHp: (base.enemyHp||1) * (path.mods.enemyHp||1),
-    countMult: (base.countMult||1) * (path.mods.countMult||1),
-    soulMult: (base.soulMult||1) * (path.mods.soulMult||1),
-    bossWave: base.bossWave || path.mods.bossWave || false,
-    _id: id,
-    _name: base._name+' → '+path.name
-  };
-  G.runPhase='playing';
-  closeOverlay();
 }
 
 function buyPerm(id){
