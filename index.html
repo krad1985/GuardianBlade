@@ -62,6 +62,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:
 <script>
 "use strict";
 const GW = 960, GH = 540;
+const PLAY_H = 395; // 遊玩區高度（上方），下方為 HUD
 const CANVAS = document.getElementById('gameCanvas');
 const C = CANVAS.getContext('2d');
 const ctx = C;
@@ -460,8 +461,8 @@ function spawnStage(){
   const mod = G.pathMods || {};
   const stage = G.stage;
   G.stageEnemyKilled=0;
-  // 每關敵人總數遞增：12 + stage*3
-  G.stageMaxEnemy = 12 + stage * 3;
+  // 每關敵人總數：50 起，每關 +20，最高 250
+  G.stageMaxEnemy = Math.min(250, 50 + (stage - 1) * 20);
   G.enemies=[];
   const count = G.stageMaxEnemy;
   for(let i=0;i<count;i++){
@@ -486,7 +487,7 @@ function spawnStage(){
     if(mod.enemyDmg) e.dmg = Math.max(0.5, e.dmg * mod.enemyDmg);
     // 散布在右側
     e.x = GW + 30 + Math.random()*120;
-    e.y = 50 + Math.random()*(GH-120);
+    e.y = 50 + Math.random()*(PLAY_H-100);
     G.enemies.push(e);
   }
   // 顯示關卡通知
@@ -734,7 +735,7 @@ function castSkill(skillId){
       if(target){
         addEffect(p.x,p.y,40,'#6644cc',10);
         p.x=clamp(target.x+rand(-30,30),40,GW-40);
-        p.y=clamp(target.y+rand(-30,30),40,GH-40);
+        p.y=clamp(target.y+rand(-30,30),40,PLAY_H-40);
         addEffect(p.x,p.y,50,'#8866ff',15);
         for(let i=G.enemies.length-1;i>=0;i--){
           const e=G.enemies[i];if(e.dead||dist(p,e)>r)continue;
@@ -855,7 +856,7 @@ function update(){
       p.x+=(dx/d)*p.speed;p.y+=(dy/d)*p.speed;
       p.facing=dx>0?1:-1;
     }
-    p.x=clamp(p.x,25,GW-25);p.y=clamp(p.y,25,GH-25);
+    p.x=clamp(p.x,25,GW-25);p.y=clamp(p.y,25,PLAY_H-25);
   }
 
   // Swing animation
@@ -1457,10 +1458,9 @@ function drawDamageNumbers(){
 function drawUI(){
   const p=G.player,wep=WEAPONS[p.weaponIdx];
 
-  // Top bar
+  // ── Top info bar ──
   fillRect(0,0,GW,28,'rgba(0,0,0,0.7)');
   ctx.fillStyle='#ccddff';ctx.font='12px Rajdhani,sans-serif';ctx.textBaseline='middle';
-
   ctx.textAlign='left';
   const pm=G.pathMods||{};
   const hiddenMark = G.hiddenRun ? '🌟 ' : '';
@@ -1470,7 +1470,6 @@ function drawUI(){
   ctx.fillText(`殘敵 ${G.enemies.filter(e=>!e.dead).length}/${G.stageMaxEnemy}`,100,14);
   ctx.fillStyle='#8899bb';
   ctx.fillText(hiddenMark+pm._name||'',220,14);
-
   ctx.textAlign='center';
   ctx.fillStyle='#ffdd88';
   ctx.fillText(`分數 ${G.score}`,390,14);
@@ -1478,53 +1477,86 @@ function drawUI(){
   ctx.fillText(`💰 ${G.gold}`,490,14);
   ctx.fillStyle='#88dd88';
   ctx.fillText(`擊殺 ${G.kills}`,580,14);
-
   ctx.textAlign='right';
   ctx.fillStyle=rarityColor(wep.r);
   ctx.fillText(`⚔️ ${wep.name}`,GW-10,14);
 
-  // Combo
-  if(G.combo>2){
-    ctx.fillStyle='#ff8844';ctx.font='bold 14px Rajdhani,sans-serif';ctx.textAlign='center';
-    ctx.fillText(`🔥 ${G.combo} 連擊!`,GW/2,50);
+  // ── Bottom HUD ──
+  fillRect(0,PLAY_H,GW,GH-PLAY_H,'rgba(8,12,28,0.92)');
+  fillRect(0,PLAY_H,GW,1,'rgba(100,150,255,0.15)');
+
+  // HP bar
+  const hpY=PLAY_H+5;
+  const hpRatio=Math.max(0,p.hp/p.maxHp);
+  const hpClr=hpRatio>0.5?'#66dd88':hpRatio>0.25?'#ffcc44':'#ff4444';
+  fillRect(12,hpY,GW-24,10,'rgba(0,0,0,0.4)');
+  fillRect(12,hpY,(GW-24)*hpRatio,10,hpClr);
+  ctx.fillStyle='#fff';ctx.font='9px Rajdhani,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`HP ${Math.ceil(p.hp)}/${Math.ceil(p.maxHp)}`,GW/2,hpY+5);
+
+  // Stats row
+  const stY=PLAY_H+22;
+  ctx.font='11px Rajdhani,sans-serif';ctx.textBaseline='middle';
+  ctx.textAlign='left';
+  ctx.fillStyle='#ff8866'; ctx.fillText(`⚔️ ${Math.floor(p.atk)}`,14,stY);
+  ctx.fillStyle='#6688ff'; ctx.fillText(`🛡️ ${Math.floor(p.def)}`,110,stY);
+  ctx.fillStyle='#66ddff'; ctx.fillText(`💨 ${p.spd.toFixed(1)}`,200,stY);
+  ctx.textAlign='right';
+  ctx.fillStyle='#ffcc44'; ctx.fillText(`💰 ${G.gold}`,GW-14,stY);
+  ctx.fillStyle='#cc66ff'; ctx.fillText(`💜 ${G.souls}`,GW-110,stY);
+  ctx.textAlign='left'; ctx.fillStyle='#88dd88'; ctx.fillText(`🏆 ${G.score}`,GW-210,stY);
+
+  // Equipment row
+  const eqY=PLAY_H+40;
+  const tOrder=['helmet','chestplate','greaves','gauntlets','boots'];
+  const tIcons={'helmet':'⛑️','chestplate':'🛡️','greaves':'👢','gauntlets':'🧤','boots':'👟'};
+  ctx.font='10px Rajdhani,sans-serif';
+  for(let i=0;i<tOrder.length;i++){
+    const t=tOrder[i],eq=p.equips[t];
+    const ex=14+i*Math.floor((GW-28)/5);
+    ctx.fillStyle=eq?rarityColor(eq.rarity):'#2a3a4a';
+    ctx.fillText(`${tIcons[t]}${eq?eq.name.substring(0,5):'空'}`,ex,eqY);
   }
 
-  // Berserk
-  if(G.berserkActive&&Math.sin(G.totalTime*0.2)>0){
-    ctx.fillStyle='#ff4444';ctx.font='bold 13px Rajdhani,sans-serif';ctx.textAlign='center';
-    ctx.fillText('⚡ 狂暴模式 ⚡',GW/2,38);
-  }
-
-  // Skills
-  const sy=GH-28;
+  // Skills (moved into HUD)
+  const skY=PLAY_H+60;
   for(let i=0;i<SKILLS.length;i++){
-    const sk=SKILLS[i],has=G.player.skills.includes(sk.id),cd=G.player.skillTimers[sk.id]||0,ready=has&&cd<=0;
-    const bx=18+i*34;
-    ctx.fillStyle=has?'rgba(30,40,80,0.7)':'rgba(20,20,30,0.4)';
-    fillRect(bx-10,sy-10,20,20,'');
-    ctx.fillStyle=ctx.fillStyle;
-    ctx.fillRect(bx-10,sy-10,20,20);
-    ctx.strokeStyle=ready?'#66aaff':has?'#445577':'#333344';ctx.lineWidth=1;
-    ctx.strokeRect(bx-10,sy-10,20,20);
+    const sk=SKILLS[i],has=p.skills.includes(sk.id),cd=p.skillTimers[sk.id]||0,ready=has&&cd<=0;
+    const bx=14+i*40;
+    ctx.fillStyle=has?'rgba(40,60,110,0.7)':'rgba(15,18,30,0.5)';
+    fillRect(bx,skY-8,24,24,'');
+    ctx.fillStyle=ctx.fillStyle; ctx.fillRect(bx,skY-8,24,24);
+    ctx.strokeStyle=ready?'#66aaff':has?'#3a5588':'#223344';ctx.lineWidth=1;
+    ctx.strokeRect(bx,skY-8,24,24);
     if(has){
-      ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillStyle=ready?'#ccddff':'#556688';
-      ctx.fillText(sk.icon,bx,sy);
+      ctx.fillText(sk.icon,bx+12,skY+4);
       if(!ready){
-        fillRect(bx-10,sy-10,20,20,'rgba(0,0,0,0.5)');
+        fillRect(bx,skY-8,24,24,'rgba(0,0,0,0.5)');
         ctx.fillStyle='#88aadd';ctx.font='9px sans-serif';
-        ctx.fillText(Math.ceil(cd/60),bx,sy+1);
+        ctx.fillText(Math.ceil(cd/60),bx+12,skY+4);
       }
     } else {
-      ctx.fillStyle='#334455';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('?',bx,sy+1);
+      ctx.fillStyle='#334455';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('?',bx+12,skY+4);
     }
   }
 
   // Artifacts
-  for(let i=0;i<Math.min(G.player.artifacts.length,8);i++){
-    const art=ARTIFACTS.find(a=>a.id===G.player.artifacts[i]);
-    if(art){ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(art.icon,12+i*21,38);}
+  for(let i=0;i<Math.min(p.artifacts.length,10);i++){
+    const art=ARTIFACTS.find(a=>a.id===p.artifacts[i]);
+    if(art){ctx.font='13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(art.icon,14+i*26,PLAY_H+92);}
+  }
+
+  // Combo / Berserk overlay (above all UI)
+  if(G.combo>2){
+    ctx.fillStyle='#ff8844';ctx.font='bold 14px Rajdhani,sans-serif';ctx.textAlign='center';
+    ctx.fillText(`🔥 ${G.combo} 連擊!`,GW/2,50);
+  }
+  if(G.berserkActive&&Math.sin(G.totalTime*0.2)>0){
+    ctx.fillStyle='#ff4444';ctx.font='bold 13px Rajdhani,sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚡ 狂暴模式 ⚡',GW/2,38);
   }
 }
 
@@ -1860,7 +1892,7 @@ CANVAS.addEventListener('mousemove',e=>{
   const r=CANVAS.getBoundingClientRect();
   const sx=GW/r.width,sy=GH/r.height;
   G.mouseX=clamp((e.clientX-r.left)*sx,0,GW);
-  G.mouseY=clamp((e.clientY-r.top)*sy,0,GH);
+  G.mouseY=clamp((e.clientY-r.top)*sy,0,PLAY_H);
 });
 
 CANVAS.addEventListener('mousedown',e=>{
@@ -1869,7 +1901,7 @@ CANVAS.addEventListener('mousedown',e=>{
   const r=CANVAS.getBoundingClientRect();
   const sx=GW/r.width,sy=GH/r.height;
   G.mouseX=clamp((e.clientX-r.left)*sx,0,GW);
-  G.mouseY=clamp((e.clientY-r.top)*sy,0,GH);
+  G.mouseY=clamp((e.clientY-r.top)*sy,0,PLAY_H);
   if(G.screen==='playing'&&!G.showOverlay) playerSwing();
 });
 CANVAS.addEventListener('mouseup',()=>{G.mouseDown=false;});
@@ -1880,7 +1912,7 @@ CANVAS.addEventListener('touchstart',e=>{
   const r=CANVAS.getBoundingClientRect();
   const sx=GW/r.width,sy=GH/r.height;
   G.mouseX=clamp((t.clientX-r.left)*sx,0,GW);
-  G.mouseY=clamp((t.clientY-r.top)*sy,0,GH);
+  G.mouseY=clamp((t.clientY-r.top)*sy,0,PLAY_H);
   if(G.screen==='playing'&&!G.showOverlay) playerSwing();
 },{passive:false});
 
@@ -1891,7 +1923,7 @@ CANVAS.addEventListener('touchmove',e=>{
       const r=CANVAS.getBoundingClientRect();
       const sx=GW/r.width,sy=GH/r.height;
       G.mouseX=clamp((t.clientX-r.left)*sx,0,GW);
-      G.mouseY=clamp((t.clientY-r.top)*sy,0,GH);
+      G.mouseY=clamp((t.clientY-r.top)*sy,0,PLAY_H);
     }
   }
 },{passive:false});
