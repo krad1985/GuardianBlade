@@ -8,7 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:'Segoe UI','Microsoft JhengHei',sans-serif}
 #gameWrapper{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-#gameCanvas{display:block;width:100%;height:100%;object-fit:contain;background:#111122;cursor:crosshair;image-rendering:pixelated}
+#gameCanvas{display:block;width:100%;height:100%;object-fit:contain;background:#111122;cursor:crosshair}
 #uiOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .screen-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);pointer-events:auto;z-index:10}
 .title{font-size:clamp(24px,5vw,56px);color:#c8a0ff;text-shadow:0 0 30px rgba(120,80,255,0.6);margin-bottom:8px;font-weight:bold;letter-spacing:4px;font-variant:small-caps}
@@ -385,32 +385,27 @@ function startRun(){
   G.midChoiceTimer=0;
   G.midChoiceMade=false;
   G.combo=0;
-  // 新局恢復守護劍HP
   G.guardian.hp = G.guardian.maxHp;
   G.guardian.shieldBlock = G.player.artifacts.includes('shield')?1:0;
   G.waveState='spawning';
   G.waveEnemies=0;
-  G.waveMax=9999; // 連續出生
+  G.waveMax=9999;
   G.waveTimer=0;
-  // 選擇地形
   const tids = shuffle(TERRAINS.map(t=>t.id));
   const cur = TERRAINS.find(t=>t.id===G.terrain?.id);
   G.terrain = TERRAINS.find(t=>t.id!==(cur?cur.id:''));
-  // 重置敵人
   G.enemies=[];
-  showOverlay(''); // 關閉路線選擇 overlay
-  G.showOverlay=false;
-  OV.innerHTML='';
+  G.spawnGrace=6; // 0.1 秒後就出怪
 }
 
 function updateSpawning(){
-  // 連續密集出生
+  // 短暫延遲讓畫面準備好
+  if(G.spawnGrace>0){G.spawnGrace--;return;}
   G.waveTimer+=G.dt;
   const mod = G.pathMods || {};
   const spd = mod.spawnRate || 1;
-  // 隨著時間增加出生速度（越來越密）
-  const accel = 1 + Math.floor(G.runTimer/1800); // 每 30 秒加速
-  const iv = Math.max(4, Math.floor((20 - G.runTimer/300) / spd / accel));
+  const accel = 1 + Math.floor(G.runTimer/1800);
+  const iv = Math.max(4, Math.floor((14 - G.runTimer/300) / spd / accel));
   if(G.waveTimer>=iv){
     G.waveTimer=0;
     G.wave++;
@@ -485,6 +480,17 @@ function showMidRunChoice(){
   }
   G.pathChoices = choices;
   showOverlay('midchoice');
+}
+
+function nextRun(){
+  // 快速下一局：隨機選路線，直接開始
+  G.runActive=false;
+  G.showOverlay=false;
+  OV.innerHTML='';
+  const paths = shuffle(RUN_PATHS);
+  G.pathMods = {...paths[0].mods, _id:paths[0].id, _name:paths[0].name};
+  recalcStats();
+  startRun();
 }
 
 // ─── ATTACK SYSTEM ──────────────────────────────────────────────────────────
@@ -788,7 +794,10 @@ function initGame(){
   p.hp=p.maxHp;
   G.screen='playing';
   document.getElementById('pauseBtn').style.display='block';
-  showPathSelect();
+  // 隨機選擇一條路線，直接開始
+  const paths = shuffle(RUN_PATHS);
+  G.pathMods = {...paths[0].mods, _id:paths[0].id, _name:paths[0].name};
+  startRun();
 }
 
 // ─── UPDATE ─────────────────────────────────────────────────────────────────
@@ -1598,7 +1607,8 @@ function runResultHTML(){
       <p style="color:#cc66ff">💜 靈魂 +${G.roundSouls}</p>
       <p style="color:#88ddff">擊殺 ${G.kills}  |  連擊 ${G.maxCombo}</p>
     </div>
-    <button class="btn btn-primary" onclick="showPathSelect()">🗺️ 選擇下一條路</button>
+    <button class="btn btn-primary" onclick="nextRun()">⚡ 快速下一局</button>
+    <button class="btn" onclick="showPathSelect()" style="margin-top:4px">🗺️ 選擇路線</button>
     <button class="btn" onclick="gameOver()" style="margin-top:4px">🏁 結束旅程</button>
   </div>`;
 }
