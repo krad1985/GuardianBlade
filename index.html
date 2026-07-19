@@ -46,6 +46,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:
 <div id="gameWrapper">
 <canvas id="gameCanvas" width="960" height="540"></canvas>
 <div id="uiOverlay"></div>
+<button id="pauseBtn" style="position:absolute;top:4px;right:6px;z-index:8;background:rgba(0,0,0,0.5);color:#ccddff;border:1px solid #6677aa;border-radius:4px;padding:2px 8px;font-size:14px;cursor:pointer;pointer-events:auto;font-family:inherit;line-height:1.4;display:none" onclick="togglePause()">⏸️</button>
 </div>
 <script>
 "use strict";
@@ -752,6 +753,7 @@ function recalcStats(){
 function gameOver(){
   G.screen='gameover';
   G.runActive=false;
+  document.getElementById('pauseBtn').style.display='none';
   // 追蹤總遊玩次數與最佳波次
   if(G.wave>(G.permUpgrades.bestWave||0)){
     G.permUpgrades.bestWave=G.wave;
@@ -785,6 +787,7 @@ function initGame(){
   G.guardian.hp=G.guardian.maxHp;
   p.hp=p.maxHp;
   G.screen='playing';
+  document.getElementById('pauseBtn').style.display='block';
   showPathSelect();
 }
 
@@ -1500,11 +1503,10 @@ function showOverlay(type){
   switch(type){
     case 'title': html=titleOverlayHTML(); break;
     case 'gameover': html=gameOverHTML(); break;
+    case 'pause': html=pauseHTML(); break;
     case 'pathselect': html=pathSelectHTML(); break;
     case 'midchoice': html=midChoiceHTML(); break;
     case 'runresult': html=runResultHTML(); break;
-    case 'shop': html=shopHTML(); break;
-    case 'blacksmith': html=blacksmithHTML(); break;
     case 'perm': html=permUpgradeHTML(); break;
     case 'help': html=helpHTML(); break;
     case '': html=''; G.showOverlay=false; break;
@@ -1598,6 +1600,38 @@ function runResultHTML(){
     </div>
     <button class="btn btn-primary" onclick="showPathSelect()">🗺️ 選擇下一條路</button>
     <button class="btn" onclick="gameOver()" style="margin-top:4px">🏁 結束旅程</button>
+  </div>`;
+}
+
+// ─── 暫停畫面 ─────────────────────────────────────────────────────────────────
+
+function togglePause(){
+  if(!G.runActive && G.runPhase!=='playing' && G.runPhase!=='path') return;
+  if(G.showOverlay && G.runPhase==='playing' && G.runActive){
+    // 關閉暫停，繼續遊戲
+    G.showOverlay=false;
+    OV.innerHTML='';
+    return;
+  }
+  if(!G.showOverlay && G.runActive){
+    showOverlay('pause');
+  }
+}
+
+function pauseHTML(){
+  const p=G.player;
+  const artNames = p.artifacts.map(id=>{const a=ARTIFACTS.find(x=>x.id===id);return a?a.icon+' '+a.name:id;}).join(', ')||'無';
+  const wep = WEAPONS[p.weaponIdx];
+  const pm=G.pathMods||{};
+  return `<div class="modal-box" style="text-align:center">
+    <h2>⏸️ 暫停</h2>
+    <div style="margin:12px 0;color:#8899bb;font-size:13px">
+      <p>路線: ${pm._name||'選擇中'}  |  計時: ${Math.floor(G.runTimer/60)}s</p>
+      <p>⚔️ ${wep.name}  |  💰 ${G.gold}  |  💜 ${G.souls}</p>
+      <p style="font-size:11px;color:#667788">聖物: ${artNames}</p>
+    </div>
+    <button class="btn btn-primary" onclick="togglePause()">▶️ 繼續遊戲</button>
+    <button class="btn" onclick="gameOver()" style="margin-top:4px">🏁 結束旅程（回標題）</button>
   </div>`;
 }
 
@@ -1759,7 +1793,12 @@ document.addEventListener('keydown',e=>{
     else if(G.screen==='gameover')startGame();
     else if(G.screen==='playing'&&!G.showOverlay) playerSwing();
   }
-  if(e.key==='Escape'&&G.showOverlay){closeOverlay();}
+  if(e.key==='Escape'){
+    if(G.showOverlay && G.runPhase==='playing'){closeOverlay();}
+    else if(!G.showOverlay && G.runActive && G.runPhase==='playing'){togglePause();}
+    else if(G.showOverlay && G.screen==='gameover'){G.showOverlay=false;OV.innerHTML='';backToTitle();}
+    else if(G.showOverlay && (G.runPhase==='path'||G.runPhase==='result')){closeOverlay();}
+  }
 });
 
 // ─── BOOT ───────────────────────────────────────────────────────────────────
